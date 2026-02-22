@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learn X Live | Sign In</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+
+<body>
+    <div class="mesh-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <h2 id="formTitle">Create Student Account</h2>
+            <p class="subtitle" id="formSubtitle">Join the AI-powered learning platform</p>
+
+            <div class="role-toggle">
+                <button type="button" id="studentBtn" class="active" onclick="toggleRole('student')">🎓 Student</button>
+                <button type="button" id="teacherBtn" onclick="toggleRole('teacher')">👩‍🏫 Teacher</button>
+            </div>
+
+            <form id="authForm">
+                <div class="form-group" id="nameGroup">
+                    <label>Full Name</label>
+                    <input type="text" id="userName" placeholder="Enter your full name">
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="userEmail" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group" id="phoneGroup">
+                    <label>Phone Number</label>
+                    <input type="tel" id="userPhone" placeholder="+91 XXXXX XXXXX">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="userPass" placeholder="Min 6 characters" required minlength="6">
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full btn-lg" id="submitBtn">
+                    Create Account
+                </button>
+            </form>
+
+            <div class="auth-footer" id="toggleText">
+                Already have an account? <a onclick="switchMode()">Sign in</a>
+            </div>
+
+            <!-- Debug indicator showing current role -->
+            <div id="roleIndicator" style="margin-top:16px; font-size:0.8rem; color:var(--text-muted); opacity:0.6;">
+                Mode: Signup · Role: Student
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        let isLogin = false;
+        let currentRole = 'student';
+
+        function toggleRole(role) {
+            currentRole = role;
+            document.getElementById('studentBtn').classList.toggle('active', role === 'student');
+            document.getElementById('teacherBtn').classList.toggle('active', role === 'teacher');
+
+            // Shift color scheme
+            const root = document.documentElement;
+            if (role === 'teacher') {
+                root.style.setProperty('--primary', '#00b894');
+                root.style.setProperty('--primary-dark', '#009d80');
+                root.style.setProperty('--primary-light', '#55efc4');
+            } else {
+                root.style.setProperty('--primary', '#6c5ce7');
+                root.style.setProperty('--primary-dark', '#5a4bd1');
+                root.style.setProperty('--primary-light', '#a29bfe');
+            }
+
+            updateUI();
+        }
+
+        function switchMode() {
+            isLogin = !isLogin;
+            updateUI();
+        }
+
+        function updateUI() {
+            const nameGroup = document.getElementById('nameGroup');
+            const phoneGroup = document.getElementById('phoneGroup');
+            const title = document.getElementById('formTitle');
+            const subtitle = document.getElementById('formSubtitle');
+            const btn = document.getElementById('submitBtn');
+            const footer = document.getElementById('toggleText');
+            const indicator = document.getElementById('roleIndicator');
+            const roleName = currentRole === 'teacher' ? 'Teacher' : 'Student';
+
+            if (isLogin) {
+                nameGroup.style.display = 'none';
+                phoneGroup.style.display = 'none';
+                title.textContent = roleName + ' Login';
+                subtitle.textContent = 'Sign in to your ' + roleName.toLowerCase() + ' account';
+                btn.textContent = 'Sign In as ' + roleName;
+                footer.innerHTML = "Don't have an account? <a onclick=\"switchMode()\">Create one</a>";
+            } else {
+                nameGroup.style.display = 'block';
+                phoneGroup.style.display = 'block';
+                title.textContent = 'Create ' + roleName + ' Account';
+                subtitle.textContent = 'Join the AI-powered learning platform';
+                btn.textContent = 'Create ' + roleName + ' Account';
+                footer.innerHTML = 'Already have an account? <a onclick="switchMode()">Sign in</a>';
+            }
+
+            indicator.textContent = 'Mode: ' + (isLogin ? 'Login' : 'Signup') + ' · Role: ' + roleName;
+        }
+
+        function showToast(msg, type = 'success') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast toast-' + type + ' show';
+            setTimeout(() => t.classList.remove('show'), 3500);
+        }
+
+        // Form submit handler
+        document.getElementById('authForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const btn = document.getElementById('submitBtn');
+            const origText = btn.textContent;
+            btn.textContent = 'Please wait...';
+            btn.disabled = true;
+
+            const email = document.getElementById('userEmail').value.trim();
+            const password = document.getElementById('userPass').value;
+
+            if (!email || !password) {
+                showToast('Please enter email and password', 'error');
+                btn.textContent = origText;
+                btn.disabled = false;
+                return;
+            }
+
+            const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup';
+            const body = {
+                email: email,
+                password: password,
+                role: currentRole
+            };
+
+            if (!isLogin) {
+                const name = document.getElementById('userName').value.trim();
+                if (!name) {
+                    showToast('Please enter your name', 'error');
+                    btn.textContent = origText;
+                    btn.disabled = false;
+                    return;
+                }
+                body.name = name;
+                body.phone = document.getElementById('userPhone').value.trim();
+            }
+
+            console.log('Auth request:', endpoint, 'role:', currentRole, 'isLogin:', isLogin);
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                console.log('Auth response:', res.status, data);
+
+                if (!res.ok) {
+                    showToast(data.error || 'Something went wrong', 'error');
+                    btn.textContent = origText;
+                    btn.disabled = false;
+                    return;
+                }
+
+                const roleName = currentRole === 'teacher' ? 'Teacher' : 'Student';
+                showToast(isLogin ? roleName + ' login successful!' : roleName + ' account created!');
+
+                // Redirect after brief delay
+                setTimeout(() => {
+                    console.log('Redirecting to:', data.redirect);
+                    window.location.href = data.redirect;
+                }, 600);
+
+            } catch (err) {
+                console.error('Auth error:', err);
+                showToast('Network error. Please try again.', 'error');
+                btn.textContent = origText;
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+
+</html>

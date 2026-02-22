@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Verification | Learn X Live</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        :root {
+            --primary: #00b894;
+            --primary-dark: #009d80;
+            --primary-light: #55efc4;
+        }
+
+        .step {
+            display: none;
+            animation: fadeSlideIn 0.4s ease-out;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .progress-steps {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 32px;
+        }
+
+        .progress-steps .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--glass-border);
+            transition: 0.3s;
+        }
+
+        .progress-steps .dot.active {
+            background: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 184, 148, 0.4);
+        }
+
+        .progress-steps .dot.done {
+            background: var(--success);
+        }
+
+        .id-badge {
+            background: rgba(0, 184, 148, 0.12);
+            border: 2px dashed var(--primary);
+            padding: 20px;
+            border-radius: var(--radius-md);
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: 3px;
+            color: var(--primary);
+            margin: 24px 0;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="mesh-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+    </div>
+
+    <div class="auth-container">
+        <div class="auth-card" style="max-width: 520px;">
+            <div class="progress-steps">
+                <div class="dot active" id="dot1"></div>
+                <div class="dot" id="dot2"></div>
+                <div class="dot" id="dot3"></div>
+            </div>
+
+            <!-- Step 1: Professional Info -->
+            <div id="step1" class="step active">
+                <h2>Professional Verification</h2>
+                <p class="subtitle">Complete your teaching profile to get started</p>
+
+                <div class="form-group">
+                    <label>Highest Qualification</label>
+                    <select id="qual">
+                        <option value="PhD / Doctorate">PhD / Doctorate</option>
+                        <option value="Master's Degree">Master's Degree (MA/MS/M.Tech)</option>
+                        <option value="Bachelor's Degree">Bachelor's Degree</option>
+                        <option value="Industry Expert">Industry Expert (10+ Years)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Subject Expertise</label>
+                    <input type="text" id="subject" placeholder="e.g. Python, Data Structures, Machine Learning">
+                </div>
+                <div class="form-group">
+                    <label>Years of Experience</label>
+                    <input type="number" id="exp" placeholder="e.g. 5" min="0">
+                </div>
+
+                <button class="btn btn-teacher btn-full btn-lg" onclick="goStep(2)">Continue →</button>
+            </div>
+
+            <!-- Step 2: Final confirmation -->
+            <div id="step2" class="step">
+                <h2>Confirm Details</h2>
+                <p class="subtitle">Review your information before finalizing</p>
+
+                <div class="card" style="text-align: left;">
+                    <p><strong>Qualification:</strong> <span id="revQual"></span></p>
+                    <p style="margin-top:10px"><strong>Expertise:</strong> <span id="revSubject"></span></p>
+                    <p style="margin-top:10px"><strong>Experience:</strong> <span id="revExp"></span> years</p>
+                </div>
+
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn btn-ghost btn-full" onclick="goStep(1)">← Back</button>
+                    <button class="btn btn-teacher btn-full" onclick="finalize()">Finalize Registration</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Success -->
+            <div id="step3" class="step">
+                <div style="font-size: 4rem; margin-bottom: 16px;">🎉</div>
+                <h2>Welcome, Professor!</h2>
+                <p class="subtitle">Your account has been verified successfully</p>
+
+                <div class="id-badge" id="teacherID">TCH-XXXXX</div>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 24px;">Save this Teacher ID for
+                    your records</p>
+
+                <button class="btn btn-teacher btn-full btn-lg" onclick="window.location.href='/teacher/dashboard'">
+                    Enter Dashboard →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        function goStep(n) {
+            // Validate step 1
+            if (n === 2) {
+                const subj = document.getElementById('subject').value.trim();
+                const exp = document.getElementById('exp').value;
+                if (!subj || !exp) {
+                    showToast('Please fill all fields', 'error');
+                    return;
+                }
+                document.getElementById('revQual').textContent = document.getElementById('qual').value;
+                document.getElementById('revSubject').textContent = subj;
+                document.getElementById('revExp').textContent = exp;
+            }
+
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById('step' + n).classList.add('active');
+
+            for (let i = 1; i <= 3; i++) {
+                const dot = document.getElementById('dot' + i);
+                dot.classList.remove('active', 'done');
+                if (i < n) dot.classList.add('done');
+                if (i === n) dot.classList.add('active');
+            }
+        }
+
+        async function finalize() {
+            try {
+                const res = await fetch('/api/auth/profile', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        qualification: document.getElementById('qual').value,
+                        subject_expertise: document.getElementById('subject').value,
+                        experience_years: parseInt(document.getElementById('exp').value)
+                    })
+                });
+
+                if (res.ok) {
+                    // Show a generated teacher ID
+                    const code = 'TCH-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+                    document.getElementById('teacherID').textContent = code;
+                    goStep(3);
+                } else {
+                    showToast('Failed to save profile', 'error');
+                }
+            } catch (err) {
+                showToast('Network error', 'error');
+            }
+        }
+
+        function showToast(msg, type = 'success') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast toast-' + type + ' show';
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+
+</html>

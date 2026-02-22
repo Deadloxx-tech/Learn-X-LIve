@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LearnXLive - AI-Powered Assignment Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* Vanilla CSS - Premium Design System */
+        :root {
+            --bg-dark: #07070a;
+            --bg-accent: #111116;
+            --primary: #6366f1;
+            /* Indigo */
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --secondary: #ec4899;
+            /* Pink */
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --font-main: 'Outfit', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            overflow-x: hidden;
+            background-image:
+                radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.15), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.15), transparent 25%);
+            background-attachment: fixed;
+        }
+
+        /* Navbar */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 1.5rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background: rgba(7, 7, 10, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+            text-decoration: none;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.6rem 1.5rem;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-light);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-outline:hover {
+            background: var(--glass-bg);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--primary-glow);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 0 5%;
+            position: relative;
+        }
+
+        .hero h1 {
+            font-size: clamp(3rem, 5vw, 5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            z-index: 2;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin-bottom: 2.5rem;
+            z-index: 2;
+        }
+
+        /* Bean Tree Timeline */
+        .tree-section {
+            padding: 5rem 5%;
+            position: relative;
+        }
+
+        .tree-header {
+            text-align: center;
+            margin-bottom: 5rem;
+        }
+
+        .tree-header h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .timeline {
+            position: relative;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* The vertical line ("stem") */
+        .timeline::after {
+            content: '';
+            position: absolute;
+            width: 4px;
+            background: linear-gradient(to bottom, var(--primary), var(--secondary));
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 4px;
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        /* Container for each branch */
+        .node {
+            padding: 2rem 40px;
+            position: relative;
+            background-color: inherit;
+            width: 50%;
+            perspective: 1000px;
+            /* For 3D flip */
+        }
+
+        .node:nth-child(odd) {
+            left: 0;
+        }
+
+        .node:nth-child(even) {
+            left: 50%;
+        }
+
+        /* The nodes ("beans" on the tree line) */
+        .node::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            right: -10px;
+            background-color: var(--bg-dark);
+            border: 4px solid var(--secondary);
+            top: 50px;
+            border-radius: 50%;
+            z-index: 1;
+            box-shadow: 0 0 10px var(--primary-glow);
+            transition: all 0.3s ease;
+        }
+
+        .node:nth-child(even)::after {
+            left: -10px;
+            border-color: var(--primary);
+        }
+
+        /* Flip Card Containers */
+        .flip-card {
+            background: transparent;
+            width: 100%;
+            height: 250px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+
+        .node:hover .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        /* Front and Back of the card */
+        .flip-card-front,
+        .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 20px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .flip-card-front {
+            z-index: 2;
+        }
+
+        .flip-card-back {
+            transform: rotateY(180deg);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(236, 72, 153, 0.1));
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .flip-card-front h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .flip-card-back p {
+            font-size: 1rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* Initial scroll animation states */
+        .hidden-node {
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 0.8s ease-out;
+        }
+
+        .show-node {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Floating particles (optional micro-animations) */
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background: white;
+            opacity: 0.1;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) rotate(0deg);
+            }
+
+            100% {
+                transform: translateY(-100vh) rotate(360deg);
+            }
+        }
+
+        /* Footer CTA */
+        .footer-cta {
+            text-align: center;
+            padding: 6rem 5%;
+            background: linear-gradient(to top, rgba(7, 7, 10, 1), transparent);
+        }
+
+        .footer-cta h2 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Responsive */
+        @media screen and (max-width: 768px) {
+            .timeline::after {
+                left: 31px;
+            }
+
+            .node {
+                width: 100%;
+                padding-left: 70px;
+                padding-right: 25px;
+            }
+
+            .node:nth-child(even) {
+                left: 0%;
+            }
+
+            .node::after,
+            .node:nth-child(even)::after {
+                left: 21px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Dynamic background particles -->
+    <div id="particles"></div>
+
+    <header>
+        <a href="/" class="logo">LearnXLive</a>
+        <div class="nav-buttons">
+            <a href="/login" class="btn btn-outline">Log In</a>
+            <a href="/login?mode=signup" class="btn btn-primary">Sign Up</a>
+        </div>
+    </header>
+
+    <section class="hero">
+        <h1>Welcome to the Future of <span>Learning</span></h1>
+        <p>AI-powered insights, automated grading, and personalized feedback for the modern classroom.</p>
+        <div class="nav-buttons">
+            <a href="#features" class="btn btn-outline">Explore Features</a>
+            <a href="/login" class="btn btn-primary">Get Started Now</a>
+        </div>
+    </section>
+
+    <section class="tree-section" id="features">
+        <div class="tree-header hidden-node">
+            <h2>How LearnXLive Works</h2>
+            <p style="color: var(--text-muted);">Scroll down the learning tree</p>
+        </div>
+
+        <div class="timeline">
+            <!-- Node 1 -->
+            <div class="node hidden-node">
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front">
+                            <div class="card-icon">🚀</div>
+                            <h3>AI-Powered Assistant</h3>
+                        </div>
+                        <div class="flip-card-back">
+                            <p>Our intelligent system uses local and cloud LLMs to understand complex student answers,
+                                providing deep, meaningful feedback.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Node 2 -->
+            <div class="node hidden-node">
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front">
+                            <div class="card-icon">📊</div>
+                            <h3>Actionable Insights</h3>
+                        </div>
+                        <div class="flip-card-back">
+                            <p>Real-time analytics highlight class performance patterns, common mistakes, and skill gaps
+                                to better direct instruction.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Node 3 -->
+            <div class="node hidden-node">
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front">
+                            <div class="card-icon">📝</div>
+                            <h3>Automated Grading</h3>
+                        </div>
+                        <div class="flip-card-back">
+                            <p>Save hours each week by letting our AI efficiently evaluate and score per-question
+                                responses based on master answer keys.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Node 4 -->
+            <div class="node hidden-node">
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front">
+                            <div class="card-icon">🧠</div>
+                            <h3>Deep Content Analysis</h3>
+                        </div>
+                        <div class="flip-card-back">
+                            <p>Upload PDFs and TXT files. The system will extract text and match core concepts to ensure
+                                a holistic understanding.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="footer-cta hidden-node">
+        <h2>Ready to transform your educational experience?</h2>
+        <a href="/login" class="btn btn-primary" style="font-size: 1.2rem; padding: 1rem 2.5rem;">Join LearnXLive
+            Today</a>
+    </section>
+
+    <script>
+        // Scroll Animation Observer for the Tree Nodes
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('show-node');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.hidden-node').forEach((node) => {
+            observer.observe(node);
+        });
+
+        // Generate glowing particles
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 30; i++) {
+            const el = document.createElement('div');
+            el.className = 'particle';
+            const size = Math.random() * 5 + 2;
+            el.style.width = size + 'px';
+            el.style.height = size + 'px';
+            el.style.left = Math.random() * 100 + 'vw';
+            el.style.top = Math.random() * 100 + 'vh';
+            el.style.animationDuration = (Math.random() * 20 + 10) + 's';
+            el.style.animationDelay = (Math.random() * 5) + 's';
+            particlesContainer.appendChild(el);
+        }
+    </script>
+</body>
+
+</html>

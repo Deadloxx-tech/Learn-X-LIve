@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard | Learn X Live</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+
+<body>
+    <div class="mesh-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="app-layout">
+        <!-- ── Sidebar ────────────────────────────────────────────── -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <h2>Learn X Live</h2>
+                <span>Student Portal</span>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-btn active" data-section="sec-dashboard" onclick="showSection('sec-dashboard')">
+                    <span class="icon">📊</span> Dashboard
+                </button>
+                <button class="nav-btn" data-section="sec-courses" onclick="showSection('sec-courses')">
+                    <span class="icon">📚</span> My Courses
+                </button>
+                <button class="nav-btn" data-section="sec-assignments" onclick="showSection('sec-assignments')">
+                    <span class="icon">📝</span> Assignments
+                </button>
+                <button class="nav-btn" data-section="sec-insights" onclick="showSection('sec-insights'); loadStudentInsights();">
+                    <span class="icon">🧠</span> AI Insights
+                </button>
+                <button class="nav-btn" data-section="sec-feedback" onclick="showSection('sec-feedback')">
+                    <span class="icon">💬</span> My Feedback
+                </button>
+                <button class="nav-btn" data-section="sec-profile" onclick="showSection('sec-profile')">
+                    <span class="icon">👤</span> Profile
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="/logout">🚪 Sign Out</a>
+            </div>
+        </aside>
+
+        <!-- ── Main ────────────────────────────────────────────────── -->
+        <main class="main-content">
+
+            <!-- ═══ DASHBOARD ═══════════════════════════════════════ -->
+            <div id="sec-dashboard" class="section active">
+                <div class="page-header">
+                    <h1>Welcome, {{ user }} 🎓</h1>
+                    <p>Track your progress and assignments</p>
+                </div>
+
+                <div class="stat-grid" id="statsContainer">
+                    <div class="stat-card">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Quick Actions</h3>
+                        </div>
+                        <button class="btn btn-primary btn-full mb-md" onclick="showSection('sec-assignments')">
+                            📝 View Assignments
+                        </button>
+                        <button class="btn btn-accent btn-full" onclick="showSection('sec-feedback')">
+                            💬 Check Feedback
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>📅 Learning Tip</h3>
+                        </div>
+                        <p style="color:var(--text-secondary); line-height:1.7; font-size:0.95rem;">
+                            "The key to mastering any concept is to practice consistently.
+                            Submit your assignments on time and review the AI-generated feedback
+                            to identify areas for improvement."
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ MY COURSES ═══════════════════════════════════════ -->
+            <div id="sec-courses" class="section">
+                <div class="page-header">
+                    <h1>My Courses</h1>
+                    <p>Your enrolled courses and progress</p>
+                </div>
+                <div id="coursesContainer">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+
+            <!-- ═══ ASSIGNMENTS ═══════════════════════════════════════ -->
+            <div id="sec-assignments" class="section">
+                <div class="page-header">
+                    <h1>Assignments</h1>
+                    <p>View and submit your assignments</p>
+                </div>
+
+                <div id="assignmentsList">
+                    <div class="spinner"></div>
+                </div>
+
+                <!-- Submission Modal -->
+                <div id="submitModal"
+                    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:200; align-items:center; justify-content:center;">
+                    <div class="card" style="max-width:700px; width:90%; max-height:85vh; overflow-y:auto;">
+                        <div class="flex-between mb-md">
+                            <h3 id="modalTitle">Submit Assignment</h3>
+                            <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕ Close</button>
+                        </div>
+                        <div id="modalTotalMarks"
+                            style="margin-bottom:16px; padding:8px 14px; background:var(--glass-bg); border-radius:var(--radius-sm); font-size:0.85rem; color:var(--text-muted);">
+                        </div>
+                        <div id="questionsAnswerContainer">
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="form-group" style="margin-top:16px;">
+                            <label>Or Upload File (PDF)</label>
+                            <input type="file" id="submitFile" accept=".pdf,.txt,.doc,.docx" style="padding:12px;">
+                        </div>
+                        <input type="hidden" id="submitAssignmentId">
+                        <button class="btn btn-primary btn-full btn-lg" onclick="submitAnswer()">
+                            📤 Submit Assignment
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ AI INSIGHTS ═════════════════════════════════════ -->
+            <div id="sec-insights" class="section">
+                <div class="page-header">
+                    <h1>🧠 AI Analysis Results</h1>
+                    <p>Automatic AI analysis of your submissions — scores, question breakdown, and feedback</p>
+                </div>
+                <div id="insightsContainer">
+                    <div class="spinner"></div>
+                </div>
+
+                <!-- Insight Detail Modal -->
+                <div id="insightDetailModal"
+                    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:200; align-items:center; justify-content:center; overflow-y:auto;">
+                    <div class="card" style="max-width:800px; width:92%; max-height:90vh; overflow-y:auto; margin:20px auto;">
+                        <div class="flex-between mb-md">
+                            <h3 id="insightDetailTitle">Assignment Analysis</h3>
+                            <button class="btn btn-ghost btn-sm" onclick="closeInsightDetail()">✕ Close</button>
+                        </div>
+                        <div id="insightDetailContent">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ FEEDBACK ════════════════════════════════════════ -->
+            <div id="sec-feedback" class="section">
+                <div class="page-header">
+                    <h1>My Feedback</h1>
+                    <p>View AI-generated and teacher feedback on your submissions</p>
+                </div>
+                <div id="feedbackContainer">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+
+            <!-- ═══ PROFILE ═══════════════════════════════════════════ -->
+            <div id="sec-profile" class="section">
+                <div class="page-header">
+                    <h1>My Profile</h1>
+                    <p>Manage your student profile &amp; online presence</p>
+                </div>
+
+                <!-- Profile Photo & Header Card -->
+                <div class="card" style="border-top: 3px solid var(--primary); overflow: visible;">
+                    <div style="display:flex; align-items:center; gap:28px; flex-wrap:wrap;">
+                        <!-- Photo Upload -->
+                        <div style="position:relative;">
+                            <div id="profilePhotoWrapper" onclick="document.getElementById('profilePhotoInput').click()"
+                                style="width:120px; height:120px; border-radius:50%; overflow:hidden; cursor:pointer;
+                                       border:3px solid var(--primary); background:linear-gradient(135deg, rgba(0,184,148,0.15), rgba(108,92,231,0.15));
+                                       display:flex; align-items:center; justify-content:center; transition: box-shadow 0.3s, transform 0.3s;
+                                       box-shadow: 0 4px 20px rgba(0,184,148,0.2);"
+                                onmouseover="this.style.boxShadow='0 8px 30px rgba(0,184,148,0.4)'; this.style.transform='scale(1.05)';"
+                                onmouseout="this.style.boxShadow='0 4px 20px rgba(0,184,148,0.2)'; this.style.transform='scale(1)';">
+                                <img id="profilePhotoPreview" src="" alt=""
+                                    style="width:100%; height:100%; object-fit:cover; display:none;">
+                                <span id="profilePhotoPlaceholder"
+                                    style="font-size:2.5rem; filter:grayscale(0.3);">🎓</span>
+                            </div>
+                            <input type="file" id="profilePhotoInput" accept="image/*" style="display:none;"
+                                onchange="uploadPhoto(this)">
+                            <div style="position:absolute; bottom:2px; right:2px; width:32px; height:32px;
+                                        border-radius:50%; background:var(--primary); display:flex; align-items:center;
+                                        justify-content:center; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.3);
+                                        font-size:0.9rem; border:2px solid var(--bg-primary);"
+                                onclick="document.getElementById('profilePhotoInput').click()">
+                                📷
+                            </div>
+                        </div>
+                        <!-- Name & Meta -->
+                        <div style="flex:1; min-width:200px;">
+                            <h2 id="profileDisplayName"
+                                style="margin:0 0 4px 0; color:var(--text-primary); font-size:1.5rem;">{{ user }}</h2>
+                            <p style="margin:0 0 8px 0; color:var(--accent); font-size:0.9rem; font-weight:600;">
+                                🎓 Student
+                            </p>
+                            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                                <span id="profileMemberSince" style="font-size:0.78rem; color:var(--text-muted);">Member
+                                    since —</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Personal Information -->
+                <div class="card" style="border-left:3px solid var(--primary);">
+                    <div class="card-header">
+                        <h3>👤 Personal Information</h3>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="profileName" value="{{ user }}">
+                        </div>
+                        <div class="form-group">
+                            <label>Email <span
+                                    style="font-size:0.75rem; color:var(--text-muted);">(read-only)</span></label>
+                            <input type="email" id="profileEmail" readonly style="opacity:0.7; cursor:not-allowed;">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="tel" id="profilePhone" placeholder="e.g. +91 98765 43210">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Bio</label>
+                        <textarea id="profileBio" rows="3"
+                            placeholder="Tell us about yourself, your learning goals, and what excites you..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Academic Details -->
+                <div class="card" style="border-left:3px solid #6c5ce7;">
+                    <div class="card-header">
+                        <h3>🏛️ Academic Details</h3>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Current Qualification</label>
+                            <input type="text" id="profileQual" placeholder="e.g. B.Tech CSE, 3rd Year">
+                        </div>
+                        <div class="form-group">
+                            <label>Interests / Subjects</label>
+                            <input type="text" id="profileSubject" placeholder="e.g. AI/ML, Web Dev, Data Science">
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Institution / University</label>
+                            <input type="text" id="profileInstitution"
+                                placeholder="e.g. IIT Delhi, Stanford University">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Online Presence -->
+                <div class="card" style="border-left:3px solid #00cec9;">
+                    <div class="card-header">
+                        <h3>🌐 Online Presence</h3>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>🔗 Website / Portfolio</label>
+                            <input type="url" id="profileWebsite" placeholder="https://yourportfolio.com">
+                        </div>
+                        <div class="form-group">
+                            <label>💼 LinkedIn</label>
+                            <input type="url" id="profileLinkedin" placeholder="https://linkedin.com/in/yourprofile">
+                        </div>
+                        <div class="form-group">
+                            <label>🐙 GitHub</label>
+                            <input type="url" id="profileGithub" placeholder="https://github.com/yourusername">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:8px;">
+                    <button class="btn btn-ghost" onclick="loadProfile()">↻ Reset</button>
+                    <button class="btn btn-primary" onclick="saveProfile()" style="min-width:180px;">
+                        💾 Save Changes
+                    </button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="/static/js/ai-logic.js"></script>
+    <script>
+        // ── Init ─────────────────────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadDashboardStats();
+            await loadCourses();
+            await loadAssignments();
+            await loadFeedback();
+            loadProfile();
+        });
+
+        // ── Dashboard Stats ──────────────────────────────────────────────────────
+        async function loadDashboardStats() {
+            try {
+                const data = await API.get('/api/dashboard/student');
+                document.getElementById('statsContainer').innerHTML = `
+            <div class="stat-card">
+                <span class="stat-icon">📚</span>
+                <div class="stat-value">${data.enrolled_courses}</div>
+                <div class="stat-label">Enrolled Courses</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon">📄</span>
+                <div class="stat-value">${data.total_submissions}</div>
+                <div class="stat-label">Submissions</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon">✅</span>
+                <div class="stat-value">${data.graded}</div>
+                <div class="stat-label">Graded</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon">📊</span>
+                <div class="stat-value">${data.average_score}%</div>
+                <div class="stat-label">Average Score</div>
+            </div>`;
+            } catch (e) {
+                document.getElementById('statsContainer').innerHTML = '<p style="color:var(--text-muted)">Failed to load stats</p>';
+            }
+        }
+
+        // ── Courses ──────────────────────────────────────────────────────────────
+        async function loadCourses() {
+            const container = document.getElementById('coursesContainer');
+            try {
+                const courses = await API.get('/api/courses');
+                if (courses.length === 0) {
+                    showEmpty(container, '📚', 'No Courses', 'You haven\'t enrolled in any courses yet');
+                    return;
+                }
+
+                container.innerHTML = `<div class="grid-auto">${courses.map(c => `
+            <div class="card" style="border-top:3px solid var(--primary);">
+                <h3 style="margin-bottom:8px;">${c.title}</h3>
+                <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:16px;">${c.category || 'General'} · ${c.duration_weeks || 0} weeks</p>
+                ${c.progress !== null && c.progress !== undefined ? `
+                    <div style="margin-bottom:12px;">
+                        <div class="flex-between" style="margin-bottom:4px;">
+                            <span style="font-size:0.8rem; color:var(--text-muted);">Progress</span>
+                            <span style="font-size:0.8rem; font-weight:700;">${c.progress}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="fill" style="width:${c.progress}%"></div>
+                        </div>
+                    </div>` : ''}
+                ${c.enrolled_at ? '<span class="badge badge-success">Enrolled</span>' :
+                        `<button class="btn btn-primary btn-sm btn-full" onclick="enrollCourse('${c.id}')">Enroll</button>`}
+            </div>`).join('')}</div>`;
+            } catch (e) {
+                showEmpty(container, '❌', 'Error', 'Failed to load courses');
+            }
+        }
+
+        async function enrollCourse(courseId) {
+            try {
+                await API.post('/api/courses/' + courseId + '/enroll');
+                showToast('Enrolled successfully!');
+                await loadCourses();
+                await loadDashboardStats();
+            } catch (e) {
+                showToast(e.error || 'Failed to enroll', 'error');
+            }
+        }
+
+        // ── Assignments ──────────────────────────────────────────────────────────
+        async function loadAssignments() {
+            const container = document.getElementById('assignmentsList');
+            try {
+                const assignments = await API.get('/api/assignments');
+                if (assignments.length === 0) {
+                    showEmpty(container, '📝', 'No Assignments', 'No assignments available yet');
+                    return;
+                }
+
+                // Get existing submissions
+                let mySubmissions = [];
+                try {
+                    mySubmissions = await API.get('/api/submissions');
+                } catch (e) { }
+                const submittedIds = new Set(mySubmissions.map(s => s.assignment_id));
+
+                container.innerHTML = assignments.map(a => `
+            <div class="card" style="border-left:4px solid ${submittedIds.has(a.id) ? 'var(--success)' : 'var(--primary)'};">
+                <div class="flex-between mb-md">
+                    <div>
+                        <h3 style="margin:0;">${a.title}</h3>
+                        <p style="color:var(--text-muted); font-size:0.85rem; margin:4px 0 0 0;">${a.course_title || ''}</p>
+                    </div>
+                    <div style="text-align:right;">
+                        ${a.total_marks ? `<span style="background:var(--glass-bg); padding:4px 10px; border-radius:12px; font-size:0.8rem; font-weight:700; color:var(--primary);">Total: ${a.total_marks} marks</span><br/>` : ''}
+                        ${a.due_date ? `<span style="color:var(--text-muted); font-size:0.85rem;">Due: ${formatDate(a.due_date)}</span>` : ''}
+                        <br/>
+                        ${submittedIds.has(a.id) ? '<span class="badge badge-success">Submitted</span>' : '<span class="badge badge-warning">Pending</span>'}
+                    </div>
+                </div>
+                ${a.description ? `<p style="color:var(--text-secondary); margin-bottom:16px; font-size:0.9rem;">${a.description}</p>` : ''}
+                ${!submittedIds.has(a.id) ? `
+                    <button class="btn btn-primary btn-sm" onclick="openSubmitModal('${a.id}', '${a.title.replace(/'/g, "\\'")}')">
+                        📤 Submit Answer
+                    </button>` :
+                        '<span style="color:var(--success); font-size:0.85rem;">✅ You have submitted this assignment</span>'}
+            </div>`).join('');
+            } catch (e) {
+                showEmpty(container, '❌', 'Error', 'Failed to load assignments');
+            }
+        }
+
+        async function openSubmitModal(assignmentId, title) {
+            document.getElementById('submitAssignmentId').value = assignmentId;
+            document.getElementById('modalTitle').textContent = 'Submit: ' + title;
+            document.getElementById('submitFile').value = '';
+            const modal = document.getElementById('submitModal');
+            modal.style.display = 'flex';
+
+            const qContainer = document.getElementById('questionsAnswerContainer');
+            const marksDiv = document.getElementById('modalTotalMarks');
+            qContainer.innerHTML = '<div class="spinner"></div>';
+
+            try {
+                const questions = await API.get(`/api/assignments/${assignmentId}/questions`);
+                if (questions.length === 0) {
+                    // Legacy assignment — show single textarea
+                    marksDiv.textContent = '';
+                    qContainer.innerHTML = `
+                        <div class="form-group">
+                            <label>Your Answer</label>
+                            <textarea class="student-q-answer" data-qnum="1" rows="8" placeholder="Type your answer here..."></textarea>
+                        </div>`;
+                    return;
+                }
+
+                const totalMarks = questions.reduce((sum, q) => sum + (q.marks || 0), 0);
+                marksDiv.innerHTML = `📋 <strong>${questions.length} Questions</strong> &nbsp;|&nbsp; Total: <strong>${totalMarks} marks</strong>`;
+
+                qContainer.innerHTML = questions.map(q => `
+                    <div style="background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:var(--radius-sm); padding:14px; margin-bottom:10px; border-left:3px solid var(--primary);">
+                        <div class="flex-between" style="margin-bottom:8px;">
+                            <strong style="color:var(--primary); font-size:0.9rem;">Q${q.question_number}. ${q.question_text}</strong>
+                            <span style="background:rgba(0,184,148,0.15); padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:700; color:var(--primary);">${q.marks} marks</span>
+                        </div>
+                        <textarea class="student-q-answer" data-qnum="${q.question_number}" rows="4"
+                            placeholder="Write your answer for Q${q.question_number}..."
+                            style="font-size:0.9rem; width:100%;"></textarea>
+                    </div>`).join('');
+            } catch (e) {
+                qContainer.innerHTML = '<p style="color:var(--danger);">Failed to load questions</p>';
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('submitModal').style.display = 'none';
+        }
+
+        async function submitAnswer() {
+            const assignmentId = document.getElementById('submitAssignmentId').value;
+            const fileInput = document.getElementById('submitFile');
+
+            // Collect per-question answers
+            const answerFields = document.querySelectorAll('#questionsAnswerContainer .student-q-answer');
+            const answers = {};
+            let hasAnswer = false;
+            answerFields.forEach(field => {
+                const qnum = field.getAttribute('data-qnum');
+                const val = field.value.trim();
+                if (val) hasAnswer = true;
+                answers[qnum] = val;
+            });
+
+            if (!hasAnswer && !fileInput.files.length) {
+                showToast('Please enter your answers or upload a file', 'error');
+                return;
+            }
+
+            try {
+                if (fileInput.files.length) {
+                    const formData = new FormData();
+                    formData.append('assignment_id', assignmentId);
+                    formData.append('content', JSON.stringify(answers) || 'See attached file');
+                    formData.append('file', fileInput.files[0]);
+                    await API.upload('/api/submissions', formData);
+                } else {
+                    await API.post('/api/submissions', {
+                        assignment_id: assignmentId,
+                        answers: answers
+                    });
+                }
+
+                showToast('Assignment submitted! AI analysis is running... 🧠');
+                closeModal();
+                await loadAssignments();
+                await loadDashboardStats();
+
+                // Auto-navigate to AI Insights and start polling
+                showSection('sec-insights');
+                startAnalysisPoll(assignmentId);
+            } catch (e) {
+                showToast(e.error || 'Failed to submit', 'error');
+            }
+        }
+
+        // ── Feedback ─────────────────────────────────────────────────────────────
+        async function loadFeedback() {
+            const container = document.getElementById('feedbackContainer');
+            try {
+                const feedbacks = await API.get('/api/feedback');
+                if (feedbacks.length === 0) {
+                    showEmpty(container, '💬', 'No Feedback Yet', 'Your feedback will appear here once your teacher reviews your submissions');
+                    return;
+                }
+
+                container.innerHTML = feedbacks.map(f => {
+                    const feedbackText = f.teacher_edited || f.ai_draft || '';
+                    // Split marks table from feedback text
+                    const parts = feedbackText.split('\n\n');
+                    let marksTable = '';
+                    let feedbackBody = feedbackText;
+
+                    if (feedbackText.startsWith('Question-wise Marks Breakdown:')) {
+                        // Extract the marks table portion
+                        const totalIdx = feedbackText.indexOf('\n\nTotal:');
+                        if (totalIdx !== -1) {
+                            // Find end of total line
+                            const afterTotal = feedbackText.indexOf('\n\n', totalIdx + 2);
+                            if (afterTotal !== -1) {
+                                marksTable = feedbackText.substring(0, afterTotal);
+                                feedbackBody = feedbackText.substring(afterTotal + 2);
+                            } else {
+                                marksTable = feedbackText;
+                                feedbackBody = '';
+                            }
+                        }
+                    }
+
+                    return `
+            <div class="card" style="border-left:4px solid ${f.status === 'approved' ? 'var(--success)' : 'var(--primary)'};">
+                <div class="flex-between mb-md">
+                    <div>
+                        <h3 style="margin:0;">${f.assignment_title || 'Assignment'}</h3>
+                        <p style="color:var(--text-muted); font-size:0.85rem; margin:4px 0 0 0;">${f.course_title || ''}</p>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:1.8rem; font-weight:800; color:${getScoreColor(f.score || 0)};">
+                            ${f.score ? f.score + '%' : '—'}
+                        </div>
+                        ${getScoreBadge(f.score || 0)}
+                    </div>
+                </div>
+
+                ${marksTable ? `
+                <div style="background:rgba(0,184,148,0.06); padding:14px; border-radius:var(--radius-sm); margin-bottom:12px; border:1px solid rgba(0,184,148,0.15);">
+                    <div style="font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:var(--primary); margin-bottom:8px;">
+                        📊 Marks Breakdown
+                    </div>
+                    <pre style="color:var(--text-secondary); font-size:0.85rem; margin:0; white-space:pre-line; font-family:inherit; line-height:1.8;">${marksTable}</pre>
+                </div>` : ''}
+
+                ${feedbackBody ? `
+                <div style="background:var(--glass-bg); padding:16px; border-radius:var(--radius-sm); margin-bottom:12px;">
+                    <div style="font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:8px;">
+                        ${f.status === 'approved' ? '✅ Teacher Approved Feedback' : '🤖 AI-Generated Feedback'}
+                    </div>
+                    <p style="color:var(--text-secondary); line-height:1.7; white-space:pre-line; font-size:0.9rem;">
+                        ${feedbackBody}
+                    </p>
+                </div>` : ''}
+
+                <div class="flex-between">
+                    <span style="color:var(--text-muted); font-size:0.8rem;">
+                        ${formatDate(f.created_at)}
+                    </span>
+                    <span class="${f.status === 'approved' ? 'badge badge-success' : 'badge badge-info'}">
+                        ${f.status}
+                    </span>
+                </div>
+            </div>`;
+                }).join('');
+            } catch (e) {
+                showEmpty(container, '❌', 'Error', 'Failed to load feedback');
+            }
+        }
+
+        // ── Profile ──────────────────────────────────────────────────────────────
+        async function loadProfile() {
+            try {
+                const data = await API.get('/api/auth/profile');
+                // Personal
+                if (data.name) document.getElementById('profileName').value = data.name;
+                if (data.email) document.getElementById('profileEmail').value = data.email;
+                if (data.phone) document.getElementById('profilePhone').value = data.phone;
+                if (data.bio) document.getElementById('profileBio').value = data.bio;
+                // Academic
+                if (data.qualification) document.getElementById('profileQual').value = data.qualification;
+                if (data.subject_expertise) document.getElementById('profileSubject').value = data.subject_expertise;
+                if (data.institution) document.getElementById('profileInstitution').value = data.institution;
+                // Online
+                if (data.website) document.getElementById('profileWebsite').value = data.website;
+                if (data.linkedin) document.getElementById('profileLinkedin').value = data.linkedin;
+                if (data.github) document.getElementById('profileGithub').value = data.github;
+                // Meta
+                if (data.created_at) {
+                    const d = new Date(data.created_at);
+                    document.getElementById('profileMemberSince').textContent =
+                        'Member since ' + d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                }
+                if (data.name) {
+                    document.getElementById('profileDisplayName').textContent = data.name;
+                }
+                // Photo
+                if (data.profile_photo_url) {
+                    const img = document.getElementById('profilePhotoPreview');
+                    img.src = data.profile_photo_url;
+                    img.style.display = 'block';
+                    document.getElementById('profilePhotoPlaceholder').style.display = 'none';
+                }
+            } catch (e) {
+                console.error('Failed to load profile:', e);
+            }
+        }
+
+        async function uploadPhoto(input) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+
+            // Preview immediately
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = document.getElementById('profilePhotoPreview');
+                img.src = e.target.result;
+                img.style.display = 'block';
+                document.getElementById('profilePhotoPlaceholder').style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+
+            // Upload
+            const formData = new FormData();
+            formData.append('photo', file);
+            try {
+                const result = await API.upload('/api/auth/profile/photo', formData);
+                showToast('Profile photo updated!');
+            } catch (e) {
+                showToast(e.error || 'Photo upload failed', 'error');
+            }
+        }
+
+        async function saveProfile() {
+            try {
+                await API.put('/api/auth/profile', {
+                    name: document.getElementById('profileName').value,
+                    phone: document.getElementById('profilePhone').value,
+                    bio: document.getElementById('profileBio').value,
+                    qualification: document.getElementById('profileQual').value,
+                    subject_expertise: document.getElementById('profileSubject').value,
+                    institution: document.getElementById('profileInstitution').value,
+                    website: document.getElementById('profileWebsite').value,
+                    linkedin: document.getElementById('profileLinkedin').value,
+                    github: document.getElementById('profileGithub').value,
+                });
+                showToast('Profile updated successfully!');
+                const name = document.getElementById('profileName').value;
+                if (name) {
+                    document.getElementById('profileDisplayName').textContent = name;
+                }
+            } catch (e) {
+                showToast('Failed to save profile', 'error');
+            }
+        }
+
+        // ── AI Insights ──────────────────────────────────────────────────────────
+        let _pollTimer = null;
+
+        async function loadStudentInsights() {
+            const container = document.getElementById('insightsContainer');
+            try {
+                const insights = await API.get('/api/student/insights');
+                if (!insights || insights.length === 0) {
+                    showEmpty(container, '🧠', 'No Analysis Yet', 'Submit an assignment and the AI will automatically analyze it. Results appear here within seconds!');
+                    return;
+                }
+
+                container.innerHTML = insights.map(ins => {
+                    const d = ins.data;
+                    const score = d.final_score || 0;
+                    const status = ins.submission_status || 'submitted';
+                    const statusBadge = status === 'reviewed'
+                        ? '<span class="badge badge-success">✅ Analyzed</span>'
+                        : status === 'analyzing'
+                            ? '<span class="badge badge-warning">⏳ Analyzing</span>'
+                            : '<span class="badge badge-info">📤 Submitted</span>';
+
+                    return `
+                    <div class="card" style="border-left:4px solid ${getScoreColor(score)}; margin-bottom:12px; cursor:pointer; transition: transform 0.2s, box-shadow 0.2s;"
+                         onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.3)';"
+                         onmouseout="this.style.transform=''; this.style.boxShadow='';"
+                         onclick="viewInsightDetail('${ins.assignment_id}')">
+                        <div class="flex-between">
+                            <div>
+                                <h3 style="margin:0;">${ins.assignment_title || 'Assignment'}</h3>
+                                <p style="color:var(--text-muted); font-size:0.85rem; margin:4px 0 0 0;">${ins.course_title || ''}</p>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:2rem; font-weight:800; color:${getScoreColor(score)};">
+                                    ${score}%
+                                </div>
+                                ${statusBadge}
+                            </div>
+                        </div>
+                        <div style="margin-top:12px; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+                            <div style="flex:1; min-width:200px;">
+                                <div class="flex-between" style="margin-bottom:4px;">
+                                    <span style="font-size:0.8rem; color:var(--text-muted);">Score</span>
+                                    <span style="font-size:0.8rem; font-weight:700; color:${getScoreColor(score)};">${d.total_marks_earned || 0}/${d.total_marks || 0} marks</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="fill" style="width:${score}%; background:${getScoreColor(score)};"></div>
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:8px;">
+                                <span style="background:rgba(0,184,148,0.1); padding:4px 10px; border-radius:12px; font-size:0.75rem; color:var(--success); font-weight:600;">✓ ${(d.matched_concepts || []).length} matched</span>
+                                <span style="background:rgba(255,118,117,0.1); padding:4px 10px; border-radius:12px; font-size:0.75rem; color:var(--danger); font-weight:600;">✗ ${(d.missing_concepts || []).length} missing</span>
+                            </div>
+                        </div>
+                        <div style="margin-top:8px; text-align:right;">
+                            <span style="font-size:0.78rem; color:var(--text-muted);">${ins.submitted_at ? formatDate(ins.submitted_at) : ''}</span>
+                            <span style="color:var(--primary); font-size:0.8rem; margin-left:12px;">View Details →</span>
+                        </div>
+                    </div>`;
+                }).join('');
+
+            } catch (e) {
+                showEmpty(container, '❌', 'Error', 'Failed to load AI insights');
+            }
+        }
+
+        async function viewInsightDetail(assignmentId) {
+            const modal = document.getElementById('insightDetailModal');
+            const content = document.getElementById('insightDetailContent');
+            modal.style.display = 'flex';
+            content.innerHTML = '<div class="spinner"></div>';
+
+            try {
+                const data = await API.get(`/api/student/insights/${assignmentId}`);
+                const insight = data.insight;
+                const feedback = data.feedback;
+                const sub = data.submission;
+
+                if (!insight) {
+                    content.innerHTML = `
+                        <div style="text-align:center; padding:30px;">
+                            <div style="font-size:3rem; margin-bottom:12px;">⏳</div>
+                            <h3 style="color:var(--text-primary);">Analysis In Progress</h3>
+                            <p style="color:var(--text-muted);">The AI is still analyzing your submission. Check back in a moment!</p>
+                            <button class="btn btn-primary" onclick="viewInsightDetail('${assignmentId}')">🔄 Refresh</button>
+                        </div>`;
+                    return;
+                }
+
+                const d = insight.data;
+                const score = d.final_score || 0;
+                document.getElementById('insightDetailTitle').textContent = insight.assignment_title || 'Assignment Analysis';
+
+                let html = '';
+
+                // ── Score Overview Card ──
+                html += `
+                <div style="background:linear-gradient(135deg, ${getScoreColor(score)}22, ${getScoreColor(score)}11); padding:24px; border-radius:var(--radius-md); margin-bottom:16px; border:1px solid ${getScoreColor(score)}33;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+                        <div>
+                            <div style="font-size:3rem; font-weight:900; color:${getScoreColor(score)};">${score}%</div>
+                            <div style="color:var(--text-muted); font-size:0.9rem;">${d.total_marks_earned || 0} / ${d.total_marks || 0} marks</div>
+                        </div>
+                        <div style="text-align:center;">
+                            <div style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;">Depth Rating</div>
+                            <div style="font-size:1.2rem; font-weight:700; color:var(--text-primary); text-transform:capitalize; margin-top:4px;">${d.depth_rating || '—'}</div>
+                        </div>
+                        <div>
+                            ${getScoreBadge(score)}
+                            ${d.is_fallback ? '<br/><span style="font-size:0.7rem; color:var(--text-muted); margin-top:4px; display:inline-block;">📊 Keyword-based analysis</span>' : '<br/><span style="font-size:0.7rem; color:var(--primary); margin-top:4px; display:inline-block;">🤖 AI-Powered analysis</span>'}
+                        </div>
+                    </div>
+                </div>`;
+
+                // ── Question-wise Breakdown ──
+                const qResults = d.question_results || [];
+                if (qResults.length > 0) {
+                    html += `
+                    <div style="margin-bottom:16px;">
+                        <h4 style="color:var(--text-primary); margin-bottom:12px;">📋 Question-wise Breakdown</h4>`;
+
+                    qResults.forEach(qr => {
+                        const qPct = qr.percentage || 0;
+                        html += `
+                        <div style="background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:var(--radius-sm); padding:14px; margin-bottom:8px; border-left:3px solid ${getScoreColor(qPct)};">
+                            <div class="flex-between" style="margin-bottom:8px;">
+                                <strong style="color:var(--text-primary); font-size:0.9rem;">Q${qr.question_number}. ${qr.question_text || ''}</strong>
+                                <span style="font-weight:800; color:${getScoreColor(qPct)}; font-size:0.95rem;">${qr.marks_earned}/${qr.max_marks}</span>
+                            </div>
+                            <div class="progress-bar" style="margin-bottom:8px; height:6px;">
+                                <div class="fill" style="width:${qPct}%; background:${getScoreColor(qPct)};"></div>
+                            </div>
+                            ${qr.matched_concepts && qr.matched_concepts.length > 0 ? `
+                                <div style="margin-bottom:4px;">
+                                    <span style="font-size:0.75rem; color:var(--success); font-weight:600;">✓ Matched:</span>
+                                    <span style="font-size:0.8rem; color:var(--text-secondary);">${qr.matched_concepts.join(', ')}</span>
+                                </div>` : ''}
+                            ${qr.missing_concepts && qr.missing_concepts.length > 0 ? `
+                                <div>
+                                    <span style="font-size:0.75rem; color:var(--danger); font-weight:600;">✗ Missing:</span>
+                                    <span style="font-size:0.8rem; color:var(--text-secondary);">${qr.missing_concepts.join(', ')}</span>
+                                </div>` : ''}
+                            ${qr.explanation ? `<p style="font-size:0.8rem; color:var(--text-muted); margin:6px 0 0 0; font-style:italic;">${qr.explanation}</p>` : ''}
+                        </div>`;
+                    });
+                    html += `</div>`;
+                }
+
+                // ── Concepts Summary ──
+                html += `
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+                    <div style="background:rgba(0,184,148,0.08); padding:16px; border-radius:var(--radius-sm); border:1px solid rgba(0,184,148,0.2);">
+                        <h4 style="color:var(--success); font-size:0.85rem; margin-bottom:8px;">✓ Matched Concepts (${(d.matched_concepts || []).length})</h4>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                            ${(d.matched_concepts || []).map(c => `<span style="background:rgba(0,184,148,0.15); color:var(--success); padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600;">${c}</span>`).join('')}
+                            ${(d.matched_concepts || []).length === 0 ? '<span style="color:var(--text-muted); font-size:0.8rem;">None</span>' : ''}
+                        </div>
+                    </div>
+                    <div style="background:rgba(255,118,117,0.08); padding:16px; border-radius:var(--radius-sm); border:1px solid rgba(255,118,117,0.2);">
+                        <h4 style="color:var(--danger); font-size:0.85rem; margin-bottom:8px;">✗ Missing Concepts (${(d.missing_concepts || []).length})</h4>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                            ${(d.missing_concepts || []).map(c => `<span style="background:rgba(255,118,117,0.15); color:var(--danger); padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600;">${c}</span>`).join('')}
+                            ${(d.missing_concepts || []).length === 0 ? '<span style="color:var(--text-muted); font-size:0.8rem;">All covered! 🎉</span>' : ''}
+                        </div>
+                    </div>
+                </div>`;
+
+                // ── Feedback Section ──
+                if (feedback) {
+                    const fbText = feedback.teacher_edited || feedback.ai_draft || '';
+                    html += `
+                    <div style="background:var(--glass-bg); padding:18px; border-radius:var(--radius-sm); border:1px solid var(--glass-border);">
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                            <h4 style="color:var(--text-primary); margin:0;">
+                                ${feedback.status === 'approved' ? '✅ Teacher Approved Feedback' : '🤖 AI-Generated Feedback'}
+                            </h4>
+                            <span class="${feedback.status === 'approved' ? 'badge badge-success' : 'badge badge-info'}">${feedback.status}</span>
+                        </div>
+                        <p style="color:var(--text-secondary); line-height:1.8; white-space:pre-line; font-size:0.9rem; margin:0;">${fbText}</p>
+                    </div>`;
+                }
+
+                // ── Analysis explanation ──
+                if (d.explanation) {
+                    html += `
+                    <div style="margin-top:12px; padding:12px; background:rgba(108,92,231,0.08); border-radius:var(--radius-sm); border:1px solid rgba(108,92,231,0.15);">
+                        <span style="font-size:0.75rem; color:#6c5ce7; font-weight:600;">ℹ️ Analysis Note:</span>
+                        <span style="font-size:0.8rem; color:var(--text-muted);">${d.explanation}</span>
+                    </div>`;
+                }
+
+                content.innerHTML = html;
+
+            } catch (e) {
+                content.innerHTML = '<p style="color:var(--danger); text-align:center;">Failed to load insight details</p>';
+            }
+        }
+
+        function closeInsightDetail() {
+            document.getElementById('insightDetailModal').style.display = 'none';
+        }
+
+        function startAnalysisPoll(assignmentId) {
+            if (_pollTimer) clearInterval(_pollTimer);
+
+            // Show loading state in insights container
+            const container = document.getElementById('insightsContainer');
+            container.innerHTML = `
+                <div class="card" style="border-left:4px solid var(--warning); text-align:center; padding:40px;">
+                    <div style="font-size:3rem; margin-bottom:12px; animation: pulse 1.5s ease-in-out infinite;">🧠</div>
+                    <h3 style="color:var(--text-primary); margin-bottom:8px;">AI Analysis in Progress...</h3>
+                    <p style="color:var(--text-muted); margin-bottom:16px;">The AI is analyzing your submission. This usually takes a few seconds.</p>
+                    <div class="progress-bar" style="max-width:300px; margin:0 auto;">
+                        <div class="fill" style="width:0%; animation: progressIndeterminate 2s ease-in-out infinite;"></div>
+                    </div>
+                </div>
+                <style>
+                    @keyframes pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.1); } }
+                    @keyframes progressIndeterminate { 0% { width:10%; margin-left:0; } 50% { width:60%; margin-left:20%; } 100% { width:10%; margin-left:90%; } }
+                </style>`;
+
+            let attempts = 0;
+            _pollTimer = setInterval(async () => {
+                attempts++;
+                try {
+                    const status = await API.get(`/api/student/submission-status/${assignmentId}`);
+                    if (status.has_insight || status.status === 'reviewed' || attempts > 30) {
+                        clearInterval(_pollTimer);
+                        _pollTimer = null;
+                        await loadStudentInsights();
+                        if (status.has_insight) {
+                            showToast('✅ AI analysis complete! View your results below.');
+                        }
+                    }
+                } catch (e) {
+                    if (attempts > 30) {
+                        clearInterval(_pollTimer);
+                        _pollTimer = null;
+                        await loadStudentInsights();
+                    }
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+
+</html>

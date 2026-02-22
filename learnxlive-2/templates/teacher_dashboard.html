@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard | Learn X Live</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        :root {
+            --primary: #00b894;
+            --primary-dark: #009d80;
+            --primary-light: #55efc4;
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            box-shadow: 0 8px 25px rgba(0, 184, 148, 0.35);
+        }
+
+        /* Ollama status dot */
+        .ollama-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 12px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse-dot 2s infinite;
+        }
+
+        .status-dot.online {
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        .status-dot.offline {
+            background: var(--danger);
+            box-shadow: 0 0 8px var(--danger);
+            animation: none;
+        }
+
+        @keyframes pulse-dot {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        /* AI Summary card */
+        .ai-summary-card {
+            background: linear-gradient(135deg, rgba(0, 184, 148, 0.08), rgba(108, 92, 231, 0.08));
+            border: 1px solid rgba(0, 184, 148, 0.2);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .ai-summary-card .ai-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .ai-badge.ollama {
+            background: rgba(0, 184, 148, 0.2);
+            color: var(--success);
+        }
+
+        .ai-badge.fallback {
+            background: rgba(254, 202, 87, 0.2);
+            color: var(--warning);
+        }
+
+        /* Expandable section */
+        .expandable {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .expandable-content {
+            display: none;
+            margin-top: 12px;
+        }
+
+        .expandable.open .expandable-content {
+            display: block;
+        }
+
+        .expandable .toggle-icon {
+            transition: transform 0.3s;
+            display: inline-block;
+        }
+
+        .expandable.open .toggle-icon {
+            transform: rotate(90deg);
+        }
+
+        /* Recommendation cards */
+        .rec-card {
+            padding: 14px;
+            background: var(--glass-bg);
+            border-radius: var(--radius-sm);
+            margin-bottom: 8px;
+            border-left: 3px solid var(--primary);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Bulk upload area */
+        .upload-area {
+            border: 2px dashed var(--glass-border);
+            border-radius: var(--radius-sm);
+            padding: 24px;
+            text-align: center;
+            margin: 16px 0;
+            transition: border-color 0.3s, background 0.3s;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: rgba(0, 184, 148, 0.05);
+        }
+
+        .upload-area input[type="file"] {
+            display: none;
+        }
+
+        /* Loading / Rendering transitions */
+        .fade-in {
+            animation: fade-in 0.4s ease-out;
+        }
+
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="mesh-bg">
+        <div class="orb orb-1" style="background:var(--primary);"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3" style="background:#6c5ce7;"></div>
+    </div>
+
+    <div class="app-layout">
+        <!-- ── Sidebar ────────────────────────────────────────────── -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <h2>Learn X Live</h2>
+                <span>Teacher Portal</span>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-btn active" data-section="sec-dashboard" onclick="showSection('sec-dashboard')">
+                    <span class="icon">📊</span> Dashboard
+                </button>
+                <button class="nav-btn" data-section="sec-assignments" onclick="showSection('sec-assignments')">
+                    <span class="icon">📝</span> Assignments
+                </button>
+                <button class="nav-btn" data-section="sec-students"
+                    onclick="showSection('sec-students'); loadStudents();">
+                    <span class="icon">👥</span> Students
+                </button>
+                <button class="nav-btn" data-section="sec-insights" onclick="showSection('sec-insights')">
+                    <span class="icon">🧠</span> AI Insights
+                </button>
+                <button class="nav-btn" data-section="sec-feedback" onclick="showSection('sec-feedback')">
+                    <span class="icon">💬</span> Feedback Editor
+                </button>
+                <button class="nav-btn" data-section="sec-reports" onclick="showSection('sec-reports')">
+                    <span class="icon">📈</span> Reports
+                </button>
+                <button class="nav-btn" data-section="sec-profile" onclick="showSection('sec-profile')">
+                    <span class="icon">👤</span> Profile
+                </button>
+            </nav>
+            <!-- Ollama Status -->
+            <div class="ollama-status" id="ollamaStatus">
+                <span class="status-dot offline" id="ollamaDot"></span>
+                <span id="ollamaLabel">Checking AI...</span>
+            </div>
+            <div class="sidebar-footer">
+                <a href="/logout">🚪 Sign Out</a>
+            </div>
+        </aside>
+
+        <!-- ── Main ────────────────────────────────────────────────── -->
+        <main class="main-content">
+
+            <!-- ═══ DASHBOARD ═══════════════════════════════════════ -->
+            <div id="sec-dashboard" class="section active">
+                <div class="page-header">
+                    <h1>Welcome, {{ user }} 👋</h1>
+                    <p>AI-Powered Assignment Insight & Feedback Assistant</p>
+                </div>
+
+                <div class="stat-grid" id="statsContainer">
+                    <div class="stat-card">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Quick Actions</h3>
+                        </div>
+                        <button class="btn btn-teacher btn-full mb-md" onclick="showSection('sec-assignments')">
+                            📝 Create Assignment
+                        </button>
+                        <button class="btn btn-accent btn-full" onclick="showSection('sec-insights')">
+                            🧠 View AI Insights
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Recent Courses</h3>
+                        </div>
+                        <div id="recentCourses">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ ASSIGNMENTS ═══════════════════════════════════════ -->
+            <div id="sec-assignments" class="section">
+                <div class="page-header">
+                    <h1>Assignments</h1>
+                    <p>Create and manage assignments for your courses</p>
+                </div>
+
+                <!-- Create Course -->
+                <div class="card" style="border-left:3px solid #6c5ce7;">
+                    <div class="card-header">
+                        <h3>📚 Create New Course</h3>
+                    </div>
+                    <div class="grid-2" style="align-items:flex-end;">
+                        <div class="form-group" style="margin:0;">
+                            <input type="text" id="newCourseTitle"
+                                placeholder="e.g. Python for Beginners, Advanced Java...">
+                        </div>
+                        <button class="btn btn-accent" onclick="createCourse()">
+                            ➕ Create Course
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Create New -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>➕ Create New Assignment</h3>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Course</label>
+                            <select id="assignCourse"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Title</label>
+                            <input type="text" id="assignTitle" placeholder="e.g. Python Functions Lab">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input type="text" id="assignDesc"
+                            placeholder="Brief description of what students should cover">
+                    </div>
+
+                    <!-- AI Auto-Generate Options -->
+                    <div
+                        style="background: rgba(108, 92, 231, 0.05); border: 1px dashed #6c5ce7; border-radius: var(--radius-sm); padding: 16px; margin-bottom: 20px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h4 style="margin:0; color:#6c5ce7;">🪄 Auto-Generate with AI</h4>
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group" style="margin:0;">
+                                <label>Difficulty</label>
+                                <select id="aiDifficulty">
+                                    <option value="Mixed">Mixed</option>
+                                    <option value="Easy">Easy</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="Hard">Hard</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin:0;">
+                                <label>Questions</label>
+                                <input type="number" id="aiCount" value="3" min="1" max="10">
+                            </div>
+                        </div>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">
+                            The AI will use the assignment <strong>Title</strong> above to generate questions and a
+                            description.
+                        </p>
+                        <div style="margin-top: 12px; display: flex; justify-content: flex-end;">
+                            <button class="btn btn-accent btn-sm" id="btnGenerateAssign"
+                                onclick="generateAssignmentQuestions()">
+                                ✨ Generate Questions
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Question Builder -->
+                    <div style="margin-bottom:16px;">
+                        <div class="flex-between" style="margin-bottom:12px;">
+                            <h4 style="margin:0; color:var(--text-primary);">📋 Questions</h4>
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <span
+                                    style="background:linear-gradient(135deg, var(--primary), var(--primary-dark)); padding:6px 14px; border-radius:20px; font-size:0.85rem; font-weight:700;">
+                                    Total: <span id="totalMarksDisplay">0</span> marks
+                                </span>
+                                <button class="btn btn-teacher btn-sm" onclick="addQuestion()">
+                                    ➕ Add Question
+                                </button>
+                            </div>
+                        </div>
+                        <div id="questionsContainer"></div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Due Date</label>
+                            <input type="date" id="assignDue">
+                        </div>
+                        <div style="display:flex; align-items:flex-end;">
+                            <button class="btn btn-teacher btn-full" onclick="createAssignment()">
+                                Publish Assignment
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bulk Upload -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📤 Bulk Upload Submissions</h3>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group" style="margin:0;">
+                            <select id="bulkAssignment">
+                                <option value="">— Select Assignment —</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="upload-area" id="bulkUploadArea">
+                                <input type="file" id="bulkFile" accept=".csv,.json" onchange="handleBulkUpload()">
+                                <span style="color:var(--text-muted);">📁 Drop CSV or JSON file here, or click to
+                                    browse</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assignment List -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📋 Your Assignments</h3>
+                        <button class="btn btn-ghost btn-sm" onclick="loadAssignments()">↻ Refresh</button>
+                    </div>
+                    <div id="assignmentList">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ STUDENTS ══════════════════════════════════════════ -->
+            <div id="sec-students" class="section">
+                <div class="page-header">
+                    <h1>👥 Students</h1>
+                    <p>View all registered students, their details, and academic progress</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Registered Students Directory</h3>
+                        <button class="btn btn-ghost btn-sm" onclick="loadStudents()">↻ Refresh</button>
+                    </div>
+                    <div id="studentsListContainer">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ AI INSIGHTS ═══════════════════════════════════════ -->
+            <div id="sec-insights" class="section">
+                <div class="page-header">
+                    <h1>AI Insights</h1>
+                    <p>Ollama-powered deep analysis of student submissions</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Select Assignment to Analyze</h3>
+                    </div>
+                    <div class="grid-2" style="align-items:flex-end;">
+                        <div class="form-group" style="margin:0;">
+                            <label
+                                style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Assignment</label>
+                            <select id="insightAssignment" onchange="loadStudentsForInsight(); loadInsights();">
+                                <option value="">— Choose Assignment —</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label
+                                style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Student</label>
+                            <select id="insightStudent">
+                                <option value="">All Students (Class Analysis)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="margin-top: 16px; text-align: right;">
+                        <button class="btn btn-teacher" id="analyzeBtn" onclick="runAnalysis()">
+                            🚀 Run AI Analysis
+                        </button>
+                    </div>
+                </div>
+
+                <div id="insightsContainer"></div>
+            </div>
+
+            <!-- ═══ FEEDBACK EDITOR ═══════════════════════════════════ -->
+            <div id="sec-feedback" class="section">
+                <div class="page-header">
+                    <h1>Feedback Editor</h1>
+                    <p>Review, edit & approve AI-generated feedback</p>
+                </div>
+
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="form-group" style="margin:0;">
+                        <select id="feedbackAssignment" onchange="loadFeedback()">
+                            <option value="">— Select Assignment —</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="feedbackContainer">
+                    <div class="empty-state">
+                        <span class="emoji">💬</span>
+                        <h3>Select an assignment above</h3>
+                        <p>AI-generated feedback will appear here for review</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ REPORTS ═══════════════════════════════════════════ -->
+            <div id="sec-reports" class="section">
+                <div class="page-header">
+                    <h1>Reports</h1>
+                    <p>Export class performance summaries</p>
+                </div>
+
+                <div class="card">
+                    <div class="grid-2" style="align-items:flex-end;">
+                        <div class="form-group" style="margin:0;">
+                            <select id="reportAssignment">
+                                <option value="">— Select Assignment —</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-teacher" onclick="generateReport()">
+                            📄 Generate Report
+                        </button>
+                    </div>
+                </div>
+
+                <div id="reportContainer"></div>
+            </div>
+
+            <!-- ═══ PROFILE ═══════════════════════════════════════════ -->
+            <div id="sec-profile" class="section">
+                <div class="page-header">
+                    <h1>My Profile</h1>
+                    <p>Manage your teaching profile &amp; online presence</p>
+                </div>
+
+                <!-- Profile Photo & Header Card -->
+                <div class="card" style="border-top: 3px solid var(--primary); overflow: visible;">
+                    <div style="display:flex; align-items:center; gap:28px; flex-wrap:wrap;">
+                        <!-- Photo Upload -->
+                        <div style="position:relative;">
+                            <div id="profilePhotoWrapper" onclick="document.getElementById('profilePhotoInput').click()"
+                                style="width:120px; height:120px; border-radius:50%; overflow:hidden; cursor:pointer;
+                                       border:3px solid var(--primary); background:linear-gradient(135deg, rgba(0,184,148,0.15), rgba(108,92,231,0.15));
+                                       display:flex; align-items:center; justify-content:center; transition: box-shadow 0.3s, transform 0.3s;
+                                       box-shadow: 0 4px 20px rgba(0,184,148,0.2);"
+                                onmouseover="this.style.boxShadow='0 8px 30px rgba(0,184,148,0.4)'; this.style.transform='scale(1.05)';"
+                                onmouseout="this.style.boxShadow='0 4px 20px rgba(0,184,148,0.2)'; this.style.transform='scale(1)';">
+                                <img id="profilePhotoPreview" src="" alt=""
+                                    style="width:100%; height:100%; object-fit:cover; display:none;">
+                                <span id="profilePhotoPlaceholder"
+                                    style="font-size:2.5rem; filter:grayscale(0.3);">👤</span>
+                            </div>
+                            <input type="file" id="profilePhotoInput" accept="image/*" style="display:none;"
+                                onchange="uploadPhoto(this)">
+                            <div style="position:absolute; bottom:2px; right:2px; width:32px; height:32px;
+                                        border-radius:50%; background:var(--primary); display:flex; align-items:center;
+                                        justify-content:center; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.3);
+                                        font-size:0.9rem; border:2px solid var(--bg-primary);"
+                                onclick="document.getElementById('profilePhotoInput').click()">
+                                📷
+                            </div>
+                        </div>
+                        <!-- Name & Meta -->
+                        <div style="flex:1; min-width:200px;">
+                            <h2 id="profileDisplayName"
+                                style="margin:0 0 4px 0; color:var(--text-primary); font-size:1.5rem;">{{ user }}</h2>
+                            <p id="profileDisplayRole"
+                                style="margin:0 0 8px 0; color:var(--primary); font-size:0.9rem; font-weight:600;">
+                                🎓 Teacher
+                            </p>
+                            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                                <span id="profileTeacherId" class="badge badge-info"
+                                    style="font-size:0.75rem; padding:4px 10px;">—</span>
+                                <span id="profileMemberSince" style="font-size:0.78rem; color:var(--text-muted);">Member
+                                    since —</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Personal Information -->
+                <div class="card" style="border-left:3px solid var(--primary);">
+                    <div class="card-header">
+                        <h3>👤 Personal Information</h3>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="profileName" value="{{ user }}">
+                        </div>
+                        <div class="form-group">
+                            <label>Email <span
+                                    style="font-size:0.75rem; color:var(--text-muted);">(read-only)</span></label>
+                            <input type="email" id="profileEmail" readonly style="opacity:0.7; cursor:not-allowed;">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="tel" id="profilePhone" placeholder="e.g. +91 98765 43210">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Bio</label>
+                        <textarea id="profileBio" rows="3"
+                            placeholder="Tell students about yourself, your teaching philosophy, and areas of interest..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Professional Details -->
+                <div class="card" style="border-left:3px solid #6c5ce7;">
+                    <div class="card-header">
+                        <h3>🏛️ Professional Details</h3>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Qualification</label>
+                            <input type="text" id="profileQual" placeholder="e.g. PhD in Computer Science">
+                        </div>
+                        <div class="form-group">
+                            <label>Subject Expertise</label>
+                            <input type="text" id="profileSubject" placeholder="e.g. Python, AI/ML, Data Science">
+                        </div>
+                        <div class="form-group">
+                            <label>Experience (Years)</label>
+                            <input type="number" id="profileExp" placeholder="e.g. 10" min="0" max="60">
+                        </div>
+                        <div class="form-group">
+                            <label>Department</label>
+                            <input type="text" id="profileDept" placeholder="e.g. Computer Science & Engineering">
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Institution / University</label>
+                            <input type="text" id="profileInstitution"
+                                placeholder="e.g. IIT Delhi, Stanford University">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Online Presence -->
+                <div class="card" style="border-left:3px solid #00cec9;">
+                    <div class="card-header">
+                        <h3>🌐 Online Presence</h3>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>🔗 Website</label>
+                            <input type="url" id="profileWebsite" placeholder="https://yourwebsite.com">
+                        </div>
+                        <div class="form-group">
+                            <label>💼 LinkedIn</label>
+                            <input type="url" id="profileLinkedin" placeholder="https://linkedin.com/in/yourprofile">
+                        </div>
+                        <div class="form-group">
+                            <label>🐙 GitHub</label>
+                            <input type="url" id="profileGithub" placeholder="https://github.com/yourusername">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:8px;">
+                    <button class="btn btn-ghost" onclick="loadProfile()">↻ Reset</button>
+                    <button class="btn btn-teacher" onclick="saveProfile()" style="min-width:180px;">
+                        💾 Save Changes
+                    </button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="/static/js/ai-logic.js"></script>
+    <script>
+        // ── State ────────────────────────────────────────────────────────────────
+        let courses = [];
+        let assignments = [];
+        let ollamaOnline = false;
+
+        // ── Init ─────────────────────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadDashboard();
+            await loadCourses();
+            await loadAssignments();
+            loadProfile();
+            checkOllamaStatus();
+        });
+
+        // ── Ollama Status ────────────────────────────────────────────────────────
+        async function checkOllamaStatus() {
+            try {
+                const data = await API.get('/api/ollama/status');
+                const dot = document.getElementById('ollamaDot');
+                const label = document.getElementById('ollamaLabel');
+                if (data.status === 'online' && data.has_required_model) {
+                    dot.className = 'status-dot online';
+                    label.textContent = `AI Online (${data.model})`;
+                    ollamaOnline = true;
+                } else if (data.status === 'online') {
+                    dot.className = 'status-dot offline';
+                    label.textContent = 'Model not found';
+                } else {
+                    dot.className = 'status-dot offline';
+                    label.textContent = 'AI Offline';
+                }
+            } catch (e) {
+                document.getElementById('ollamaDot').className = 'status-dot offline';
+                document.getElementById('ollamaLabel').textContent = 'AI Offline';
+            }
+        }
+
+        // ── Dashboard ────────────────────────────────────────────────────────────
+        async function loadDashboard() {
+            try {
+                const data = await API.get('/api/dashboard/teacher');
+                document.getElementById('statsContainer').innerHTML = `
+            <div class="stat-card">
+                <span class="stat-icon">📚</span>
+                <div class="stat-value">${data.total_courses}</div>
+                <div class="stat-label">Courses</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon">👥</span>
+                <div class="stat-value">${data.total_students}</div>
+                <div class="stat-label">Students</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon">⏳</span>
+                <div class="stat-value">${data.pending_reviews}</div>
+                <div class="stat-label">Pending Reviews</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon">✅</span>
+                <div class="stat-value">${data.reviewed}</div>
+                <div class="stat-label">Reviewed</div>
+            </div>`;
+            } catch (e) {
+                document.getElementById('statsContainer').innerHTML = '<p style="color:var(--text-muted)">Failed to load stats</p>';
+            }
+        }
+
+        async function loadCourses() {
+            try {
+                courses = await API.get('/api/courses');
+                const selects = ['assignCourse'];
+                selects.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.innerHTML = '<option value="">— Select Course —</option>';
+                        courses.forEach(c => el.innerHTML += `<option value="${c.id}">${c.title}</option>`);
+                    }
+                });
+
+                const rc = document.getElementById('recentCourses');
+                if (courses.length === 0) {
+                    rc.innerHTML = '<p style="color:var(--text-muted);">No courses yet. Go to Assignments tab to create one!</p>';
+                } else {
+                    rc.innerHTML = courses.slice(0, 3).map(c => `
+                <div style="padding:12px; background:var(--glass-bg); border-radius:var(--radius-sm); margin-bottom:8px; border-left:3px solid var(--primary);">
+                    <strong>${c.title}</strong>
+                    <span style="float:right; color:var(--text-muted); font-size:0.8rem;">${c.category || ''}</span>
+                </div>`).join('');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        // ── Courses ──────────────────────────────────────────────────────────────
+        async function createCourse() {
+            const title = document.getElementById('newCourseTitle').value.trim();
+            if (!title) {
+                showToast('Please enter a course name', 'error');
+                return;
+            }
+            try {
+                await API.post('/api/courses', { title: title });
+                showToast('Course created: ' + title);
+                document.getElementById('newCourseTitle').value = '';
+                await loadCourses();
+            } catch (e) {
+                showToast(e.error || 'Failed to create course', 'error');
+            }
+        }
+
+        // ── Assignments ──────────────────────────────────────────────────────────
+        async function loadAssignments() {
+            try {
+                assignments = await API.get('/api/assignments');
+
+                ['insightAssignment', 'feedbackAssignment', 'reportAssignment', 'bulkAssignment'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        const first = el.options[0].textContent;
+                        el.innerHTML = `<option value="">${first}</option>`;
+                        assignments.forEach(a => el.innerHTML += `<option value="${a.id}">${a.title} (${a.course_title || ''})</option>`);
+                    }
+                });
+
+                const container = document.getElementById('assignmentList');
+                if (assignments.length === 0) {
+                    showEmpty(container, '📝', 'No Assignments', 'Create your first assignment above');
+                    return;
+                }
+
+                container.innerHTML = `<table class="data-table">
+            <tr><th>Title</th><th>Course</th><th>Marks</th><th>Due</th><th>Submissions</th><th>Action</th></tr>
+            ${assignments.map(a => `
+                <tr>
+                    <td><strong>${a.title}</strong></td>
+                    <td>${a.course_title || '—'}</td>
+                    <td>${a.total_marks || '—'}</td>
+                    <td>${formatDate(a.due_date)}</td>
+                    <td><button class="btn btn-ghost btn-sm" onclick="viewSubmissions('${a.id}')">View</button></td>
+                    <td><button class="btn btn-teacher btn-sm" onclick="selectAndAnalyze('${a.id}')">🧠 Analyze</button></td>
+                </tr>`).join('')}
+        </table>`;
+            } catch (e) { console.error(e); }
+        }
+
+        // ── Students ─────────────────────────────────────────────────────────────
+        async function loadStudents() {
+            const container = document.getElementById('studentsListContainer');
+            try {
+                const students = await API.get('/api/teacher/students');
+
+                if (students.length === 0) {
+                    showEmpty(container, '👥', 'No Students', 'There are no registered students yet.');
+                    return;
+                }
+
+                container.innerHTML = `<table class="data-table">
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Institution</th>
+                        <th>Courses</th>
+                        <th>Submissions</th>
+                        <th>Joined</th>
+                    </tr>
+                    ${students.map(s => `
+                        <tr>
+                            <td>
+                                <strong>${s.name}</strong>
+                                ${s.phone ? `<br><span style="font-size:0.75rem; color:var(--text-muted);">📞 ${s.phone}</span>` : ''}
+                            </td>
+                            <td>${s.email}</td>
+                            <td>
+                                <span style="font-size:0.85rem;">${s.institution || '—'}</span>
+                                ${s.qualification ? `<br><span style="font-size:0.75rem; color:var(--text-muted);">${s.qualification}</span>` : ''}
+                            </td>
+                            <td><span class="badge badge-info">${s.enrolled_courses || 0}</span></td>
+                            <td><span class="badge badge-success">${s.total_submissions || 0}</span></td>
+                            <td style="font-size:0.85rem; color:var(--text-muted);">${formatDate(s.created_at)}</td>
+                        </tr>
+                    `).join('')}
+                </table>`;
+            } catch (e) {
+                showEmpty(container, '❌', 'Error', 'Failed to load students directory');
+                console.error(e);
+            }
+        }
+
+        // ── Question Builder ─────────────────────────────────────────────────────
+        let questionCount = 0;
+
+        function addQuestion(text = '', answer = '', marks = 5) {
+            questionCount++;
+            const container = document.getElementById('questionsContainer');
+            const card = document.createElement('div');
+            card.className = 'question-card';
+            card.id = `qcard-${questionCount}`;
+            card.setAttribute('data-qnum', questionCount);
+            card.style.cssText = 'background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:var(--radius-sm); padding:16px; margin-bottom:12px; border-left:3px solid var(--primary);';
+
+            // Escape values for HTML if they come from API
+            let escText = '';
+            let escAnswer = '';
+            if (typeof text === 'string') {
+                escText = text.replace(/"/g, '&quot;');
+            }
+            if (typeof answer === 'string') {
+                escAnswer = answer.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+
+            card.innerHTML = `
+                <div class="flex-between" style="margin-bottom:10px;">
+                    <strong style="color:var(--primary);">Question ${questionCount}</strong>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <label style="font-size:0.8rem; color:var(--text-muted); margin:0;">Marks:</label>
+                        <input type="number" class="q-marks" value="${marks}" min="1" max="100" step="0.5"
+                            style="width:70px; padding:6px 8px; font-size:0.9rem; text-align:center;"
+                            oninput="updateTotalMarks()">
+                        <button class="btn btn-ghost btn-sm" onclick="removeQuestion(${questionCount})" style="color:var(--danger); padding:4px 8px;">✕</button>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:10px;">
+                    <input type="text" class="q-text" placeholder="Enter question text..." style="font-size:0.9rem;" value="${escText}">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <textarea class="q-answer" rows="3" placeholder="Enter the model/ideal answer for this question..." style="font-size:0.9rem;">${escAnswer}</textarea>
+                </div>`;
+            container.appendChild(card);
+            updateTotalMarks();
+        }
+
+        async function generateAssignmentQuestions() {
+            const title = document.getElementById('assignTitle').value.trim();
+            const diff = document.getElementById('aiDifficulty').value;
+            const count = parseInt(document.getElementById('aiCount').value) || 3;
+
+            if (!title) {
+                showToast('Please enter an Assignment Title to generate questions', 'warning');
+                return;
+            }
+            if (!ollamaOnline) {
+                showToast('AI is offline. Fallback generic questions will be generated.', 'warning');
+            }
+
+            const btn = document.getElementById('btnGenerateAssign');
+            btn.innerHTML = '<div class="spinner" style="width:16px; height:16px; border-width:2px; display:inline-block; vertical-align:middle; margin-right:8px;"></div> Generating...';
+            btn.disabled = true;
+
+            try {
+                const res = await API.post('/api/assignments/generate', {
+                    title: title,
+                    difficulty: diff,
+                    num_questions: count
+                });
+
+                if (res.questions && res.questions.length > 0) {
+                    res.questions.forEach(q => {
+                        addQuestion(q.question_text, q.answer_key, q.marks);
+                    });
+
+                    // Populate description
+                    if (res.description) {
+                        document.getElementById('assignDesc').value = res.description;
+                    }
+
+                    showToast(`Successfully generated ${res.questions.length} questions!`, 'success');
+                } else {
+                    showToast('Failed to generate questions. Please try again.', 'error');
+                }
+            } catch (e) {
+                showToast(e.error || 'Error generating questions.', 'error');
+            } finally {
+                btn.innerHTML = '✨ Generate Questions';
+                btn.disabled = false;
+            }
+        }
+
+        function removeQuestion(num) {
+            const card = document.getElementById(`qcard-${num}`);
+            if (card) card.remove();
+            updateTotalMarks();
+        }
+
+        function updateTotalMarks() {
+            const inputs = document.querySelectorAll('#questionsContainer .q-marks');
+            let total = 0;
+            inputs.forEach(inp => total += parseFloat(inp.value) || 0);
+            document.getElementById('totalMarksDisplay').textContent = total;
+        }
+
+        async function createAssignment() {
+            const course = document.getElementById('assignCourse').value;
+            const title = document.getElementById('assignTitle').value.trim();
+
+            if (!course || !title) {
+                showToast('Please fill course and title', 'error');
+                return;
+            }
+
+            // Collect questions
+            const cards = document.querySelectorAll('#questionsContainer .question-card');
+            if (cards.length === 0) {
+                showToast('Please add at least one question', 'error');
+                return;
+            }
+
+            const questions = [];
+            let valid = true;
+            cards.forEach((card, i) => {
+                const qText = card.querySelector('.q-text').value.trim();
+                const qAnswer = card.querySelector('.q-answer').value.trim();
+                const qMarks = parseFloat(card.querySelector('.q-marks').value) || 1;
+
+                if (!qText || !qAnswer) {
+                    showToast(`Question ${i + 1}: both question text and answer key are required`, 'error');
+                    valid = false;
+                    return;
+                }
+                questions.push({
+                    question_text: qText,
+                    answer_key: qAnswer,
+                    marks: qMarks
+                });
+            });
+            if (!valid) return;
+
+            try {
+                const result = await API.post('/api/assignments', {
+                    course_id: course,
+                    title: title,
+                    description: document.getElementById('assignDesc').value,
+                    due_date: document.getElementById('assignDue').value,
+                    questions: questions
+                });
+                showToast(`Assignment published! ${result.question_count} questions, ${result.total_marks} total marks`);
+                document.getElementById('assignTitle').value = '';
+                document.getElementById('assignDesc').value = '';
+                document.getElementById('questionsContainer').innerHTML = '';
+                questionCount = 0;
+                updateTotalMarks();
+                await loadAssignments();
+            } catch (e) {
+                showToast(e.error || 'Failed to create', 'error');
+            }
+        }
+
+        // ── Bulk Upload ──────────────────────────────────────────────────────────
+        async function handleBulkUpload() {
+            const aid = document.getElementById('bulkAssignment').value;
+            const fileInput = document.getElementById('bulkFile');
+            if (!aid) { showToast('Select an assignment first', 'error'); fileInput.value = ''; return; }
+            if (!fileInput.files.length) return;
+
+            const formData = new FormData();
+            formData.append('assignment_id', aid);
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const result = await API.upload('/api/submissions/bulk', formData);
+                showToast(result.message || `${result.created} submissions uploaded!`);
+                fileInput.value = '';
+            } catch (e) {
+                showToast(e.error || 'Upload failed', 'error');
+                fileInput.value = '';
+            }
+        }
+
+        async function viewSubmissions(assignmentId) {
+            showSection('sec-insights');
+            document.getElementById('insightAssignment').value = assignmentId;
+            await loadInsights();
+        }
+
+        function selectAndAnalyze(assignmentId) {
+            showSection('sec-insights');
+            document.getElementById('insightAssignment').value = assignmentId;
+            runAnalysis();
+        }
+
+        // ── AI Insights ──────────────────────────────────────────────────────────
+        async function loadStudentsForInsight() {
+            const aid = document.getElementById('insightAssignment').value;
+            const studentSelect = document.getElementById('insightStudent');
+            studentSelect.innerHTML = '<option value="">All Students (Class Analysis)</option>';
+            if (!aid) return;
+
+            try {
+                const subs = await API.get('/api/submissions?assignment_id=' + aid);
+                subs.forEach(s => {
+                    studentSelect.innerHTML += `<option value="${s.student_id}">${s.student_name || 'Student'}</option>`;
+                });
+            } catch (e) {
+                console.error("Failed to load students", e);
+            }
+        }
+
+        async function runAnalysis() {
+            const aid = document.getElementById('insightAssignment').value;
+            const sid = document.getElementById('insightStudent').value;
+            if (!aid) { showToast('Select an assignment first', 'error'); return; }
+
+            const btn = document.getElementById('analyzeBtn');
+            btn.innerHTML = '<div class="spinner" style="width:16px; height:16px; border-width:2px; display:inline-block; vertical-align:middle; margin-right:8px;"></div> Analyzing...';
+            btn.disabled = true;
+
+            const container = document.getElementById('insightsContainer');
+            if (!sid) {
+                container.innerHTML = `
+            <div class="card text-center" style="padding:60px; transition: opacity 0.3s; animation: fade-in 0.5s;">
+                <div class="spinner"></div>
+                <p style="margin-top:20px; color:var(--text-secondary);">Running Ollama AI analysis on all submissions...</p>
+                <p style="color:var(--text-muted); font-size:0.85rem;">Deep semantic analysis · Concept extraction · Feedback generation</p>
+                <p style="color:var(--text-muted); font-size:0.8rem; margin-top:8px;">This may take 30-60 seconds depending on submission count</p>
+            </div>`;
+            } else {
+                container.innerHTML = `
+            <div class="card text-center" style="padding:60px; transition: opacity 0.3s; animation: fade-in 0.5s;">
+                <div class="spinner"></div>
+                <p style="margin-top:20px; color:var(--text-secondary);">Running Ollama AI analysis on student submission...</p>
+                <p style="color:var(--text-muted); font-size:0.85rem;">Deep semantic analysis · Concept extraction · Feedback generation</p>
+            </div>`;
+            }
+
+            try {
+                const payload = sid ? { student_id: sid } : {};
+                const data = await API.post('/api/analyze/' + aid, payload);
+                btn.innerHTML = '🚀 Run AI Analysis';
+                btn.disabled = false;
+
+                renderInsights(data, container);
+                showToast('Analysis complete!');
+                loadDashboard();
+            } catch (e) {
+                btn.innerHTML = '🚀 Run AI Analysis';
+                btn.disabled = false;
+                showToast(e.error || 'Analysis failed', 'error');
+                container.innerHTML = '';
+            }
+        }
+
+        async function loadInsights() {
+            const aid = document.getElementById('insightAssignment').value;
+            if (!aid) return;
+
+            const container = document.getElementById('insightsContainer');
+            showSpinner(container);
+
+            try {
+                const insights = await API.get('/api/insights/' + aid);
+                if (insights.length === 0) {
+                    showEmpty(container, '🧠', 'No Insights Yet', 'Click "Run AI Analysis" to analyze submissions');
+                    return;
+                }
+
+                const classInsight = insights.find(i => i.type === 'class');
+                const studentInsights = insights.filter(i => i.type === 'student');
+
+                if (!classInsight) {
+                    showEmpty(container, '🧠', 'No Insights Yet', 'Click "Run AI Analysis" to analyze submissions');
+                    return;
+                }
+
+                // Add fade-in for smooth rendering
+                container.classList.add('fade-in');
+                setTimeout(() => container.classList.remove('fade-in'), 400);
+
+                const data = classInsight.data;
+                renderInsights({
+                    class_stats: data.stats,
+                    ai_summary: data.ai_summary || '',
+                    common_mistakes: data.common_mistakes || [],
+                    concept_clusters: data.concept_clusters || [],
+                    performance_patterns: data.performance_patterns || {},
+                    teaching_recommendations: data.teaching_recommendations || [],
+                    ollama_powered: data.ollama_powered || false,
+                    submissions: studentInsights.map(s => ({
+                        ...s.data,
+                        student_name: s.data.student_name || '—',
+                        confidence: s.confidence
+                    }))
+                }, container);
+            } catch (e) {
+                showEmpty(container, '❌', 'Error', 'Failed to load insights');
+            }
+        }
+
+        function renderInsights(data, container) {
+            const stats = data.class_stats;
+            const avgColor = getScoreColor(stats.average_score);
+            const isAI = data.ollama_powered;
+            const badgeClass = isAI ? 'ollama' : 'fallback';
+            const badgeText = isAI ? '🤖 Ollama AI Powered' : '⚡ Keyword Analysis (Ollama Offline)';
+
+            let html = '';
+
+            // ── AI Summary (Ollama only) ──
+            if (data.ai_summary) {
+                html += `
+            <div class="ai-summary-card">
+                <span class="ai-badge ${badgeClass}">${badgeText}</span>
+                <p style="color:var(--text-secondary); line-height:1.7; font-size:0.95rem;">${data.ai_summary}</p>
+            </div>`;
+            } else {
+                html += `
+            <div style="margin-bottom:16px;">
+                <span class="ai-badge ${badgeClass}" style="display:inline-flex; padding:6px 14px; border-radius:20px; font-size:0.75rem; font-weight:700;">${badgeText}</span>
+            </div>`;
+            }
+
+            // ── Class Stats ──
+            html += `
+        <div class="insight-card">
+            <div class="insight-header">
+                <span class="emoji">📊</span>
+                <div>
+                    <h3 style="margin:0;">Class Performance Overview</h3>
+                    <span style="color:var(--text-muted); font-size:0.85rem;">${stats.total_submissions} submissions analyzed</span>
+                </div>
+            </div>
+            <div class="stat-grid" style="margin-bottom:0;">
+                <div class="stat-card" style="padding:16px;">
+                    <div class="stat-value" style="color:${avgColor}; font-size:1.6rem;">${stats.average_score}%</div>
+                    <div class="stat-label">Average Score</div>
+                </div>
+                <div class="stat-card" style="padding:16px;">
+                    <div class="stat-value" style="color:var(--success); font-size:1.6rem;">${stats.highest_score}%</div>
+                    <div class="stat-label">Highest Score</div>
+                </div>
+                <div class="stat-card" style="padding:16px;">
+                    <div class="stat-value" style="color:var(--danger); font-size:1.6rem;">${stats.lowest_score}%</div>
+                    <div class="stat-label">Lowest Score</div>
+                </div>
+                <div class="stat-card" style="padding:16px;">
+                    <div class="stat-value" style="font-size:1.6rem;">${stats.above_70}/${stats.total_submissions}</div>
+                    <div class="stat-label">Above 70%</div>
+                </div>
+            </div>
+        </div>`;
+
+            // ── Common Mistakes (AI) ──
+            if (data.common_mistakes && data.common_mistakes.length > 0) {
+                html += `
+        <div class="insight-card">
+            <div class="insight-header">
+                <span class="emoji">⚠️</span>
+                <div>
+                    <h3 style="margin:0;">Common Mistakes Detected</h3>
+                    <span style="color:var(--text-muted); font-size:0.85rem;">AI-identified patterns across submissions</span>
+                </div>
+            </div>
+            ${data.common_mistakes.map((m, i) => `
+                <div class="expandable" onclick="this.classList.toggle('open')" style="padding:14px; background:var(--glass-bg); border-radius:var(--radius-sm); margin-bottom:8px; border-left:3px solid var(--danger);">
+                    <div class="flex-between">
+                        <div>
+                            <span class="toggle-icon">▶</span>
+                            <strong style="font-size:0.9rem; margin-left:6px;">${m.concept || m.terms?.join(', ') || 'Mistake ' + (i + 1)}</strong>
+                        </div>
+                        <span class="badge badge-danger">${m.frequency || ''} students</span>
+                    </div>
+                    <div class="expandable-content">
+                        ${m.why_flagged ? `<p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:8px;"><strong>Why flagged:</strong> ${m.why_flagged}</p>` : ''}
+                        ${m.suggestion ? `<p style="color:var(--primary); font-size:0.85rem;"><strong>💡 Suggestion:</strong> ${m.suggestion}</p>` : ''}
+                    </div>
+                </div>`).join('')}
+        </div>`;
+            }
+
+            // ── Concept Clusters (AI) ──
+            if (data.concept_clusters && data.concept_clusters.length > 0) {
+                html += `
+        <div class="insight-card">
+            <div class="insight-header">
+                <span class="emoji">🔗</span>
+                <div>
+                    <h3 style="margin:0;">Concept-Wise Error Clusters</h3>
+                    <span style="color:var(--text-muted); font-size:0.85rem;">Related concepts grouped by gap area</span>
+                </div>
+            </div>
+            ${data.concept_clusters.map(cl => `
+                <div style="padding:14px; background:var(--glass-bg); border-radius:var(--radius-sm); margin-bottom:8px; border-left:3px solid ${cl.severity === 'high' ? 'var(--danger)' : cl.severity === 'medium' ? 'var(--warning)' : 'var(--primary)'};">
+                    <div class="flex-between">
+                        <strong style="font-size:0.9rem;">${cl.cluster_name || 'Cluster'}</strong>
+                        <span class="badge ${cl.severity === 'high' ? 'badge-danger' : cl.severity === 'medium' ? 'badge-warning' : 'badge-success'}">${cl.severity || 'low'} · ${cl.students_affected_pct || 0}%</span>
+                    </div>
+                    <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:4px;">
+                        ${(cl.concepts || []).map(c => `<span class="tag tag-danger">${c}</span>`).join('')}
+                    </div>
+                </div>`).join('')}
+        </div>`;
+            }
+
+            // ── Performance Patterns (AI) ──
+            if (data.performance_patterns && Object.keys(data.performance_patterns).length > 0) {
+                const pp = data.performance_patterns;
+                html += `
+        <div class="insight-card">
+            <div class="insight-header">
+                <span class="emoji">📈</span>
+                <h3 style="margin:0;">Performance Patterns</h3>
+            </div>
+            <div style="display:grid; gap:12px;">
+                ${pp.high_performers ? `
+                <div style="padding:14px; background:rgba(0,184,148,0.08); border-radius:var(--radius-sm); border-left:3px solid var(--success);">
+                    <strong style="color:var(--success);">🌟 High Performers</strong>
+                    <p style="color:var(--text-secondary); font-size:0.9rem; margin-top:6px;">${pp.high_performers}</p>
+                </div>` : ''}
+                ${pp.struggling_students ? `
+                <div style="padding:14px; background:rgba(255,107,107,0.08); border-radius:var(--radius-sm); border-left:3px solid var(--danger);">
+                    <strong style="color:var(--danger);">⚠️ Struggling Students</strong>
+                    <p style="color:var(--text-secondary); font-size:0.9rem; margin-top:6px;">${pp.struggling_students}</p>
+                </div>` : ''}
+                ${pp.improvement_areas && pp.improvement_areas.length > 0 ? `
+                <div style="padding:14px; background:var(--glass-bg); border-radius:var(--radius-sm);">
+                    <strong>🎯 Top Improvement Areas</strong>
+                    <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;">
+                        ${pp.improvement_areas.map(a => `<span class="tag">${a}</span>`).join('')}
+                    </div>
+                </div>` : ''}
+            </div>
+        </div>`;
+            }
+
+            // ── Teaching Recommendations (AI) ──
+            if (data.teaching_recommendations && data.teaching_recommendations.length > 0) {
+                html += `
+        <div class="insight-card">
+            <div class="insight-header">
+                <span class="emoji">💡</span>
+                <h3 style="margin:0;">Teaching Recommendations</h3>
+            </div>
+            ${data.teaching_recommendations.map((r, i) => `
+                <div class="rec-card">
+                    <span style="color:var(--primary); font-weight:700;">${i + 1}.</span> ${r}
+                </div>`).join('')}
+        </div>`;
+            }
+
+            // ── Per-Student Results ──
+            html += `
+        <div class="card">
+            <div class="card-header"><h3>Student-Level Results</h3></div>
+            <table class="data-table">
+                <tr><th>Student</th><th>Score</th><th>Depth</th><th>Confidence</th><th>Status</th></tr>
+                ${(data.submissions || []).map(s => `
+                    <tr>
+                        <td>
+                            <strong>${s.student_name || '—'}</strong>
+                            ${s.is_fallback ? '<span style="font-size:0.7rem; color:var(--warning);"> (keyword)</span>' : ''}
+                        </td>
+                        <td style="color:${getScoreColor(s.final_score)}; font-weight:700;">${s.final_score}%</td>
+                        <td><span class="badge ${s.depth_rating === 'thorough' ? 'badge-success' : s.depth_rating === 'moderate' ? 'badge-warning' : 'badge-danger'}">${s.depth_rating || '—'}</span></td>
+                        <td>${s.confidence}%</td>
+                        <td>${getScoreBadge(s.final_score)}</td>
+                    </tr>
+                    ${s.explanation ? `
+                    <tr>
+                        <td colspan="5" style="padding:8px 16px; background:var(--glass-bg); font-size:0.85rem; color:var(--text-secondary); border-left:3px solid var(--primary); margin-bottom: 4px;">
+                            💡 ${s.explanation}
+                        </td>
+                    </tr>` : ''}`).join('')}
+            </table>
+        </div>`;
+
+            // ── Explainability ──
+            html += `
+        <div class="insight-card">
+            <div class="insight-header">
+                <span class="emoji">🔍</span>
+                <div>
+                    <h3 style="margin:0;">Explainability Panel</h3>
+                    <span style="color:var(--text-muted); font-size:0.85rem;">How the analysis was performed</span>
+                </div>
+            </div>
+            <div style="display:grid; gap:12px;">
+                <div style="padding:12px; background:var(--glass-bg); border-radius:var(--radius-sm);">
+                    <strong>🤖 Analysis Engine:</strong>
+                    <span style="color:var(--text-secondary);"> ${isAI ? 'Ollama LLM (llama3.2) — Deep semantic understanding of concepts, accuracy, and depth' : 'Keyword-based fallback — Jaccard similarity + keyword coverage against master answer'}</span>
+                </div>
+                <div style="padding:12px; background:var(--glass-bg); border-radius:var(--radius-sm);">
+                    <strong>📐 Scoring Criteria:</strong>
+                    <span style="color:var(--text-secondary);"> ${isAI ? 'Concept coverage (40%) + Accuracy (30%) + Depth (20%) + Clarity (10%)' : '40% Jaccard Similarity + 60% Keyword Coverage'}</span>
+                </div>
+                <div style="padding:12px; background:var(--glass-bg); border-radius:var(--radius-sm);">
+                    <strong>📊 Confidence Score:</strong>
+                    <span style="color:var(--text-secondary);"> ${isAI ? 'AI self-assessed confidence based on answer clarity and comparability' : 'Based on master answer length and student response depth'}</span>
+                </div>
+            </div>
+        </div>`;
+
+            container.innerHTML = html;
+        }
+
+        // ── Feedback ─────────────────────────────────────────────────────────────
+        async function loadFeedback() {
+            const aid = document.getElementById('feedbackAssignment').value;
+            if (!aid) return;
+
+            const container = document.getElementById('feedbackContainer');
+            showSpinner(container);
+
+            try {
+                const feedbacks = await API.get('/api/feedback?assignment_id=' + aid);
+                if (feedbacks.length === 0) {
+                    showEmpty(container, '💬', 'No Feedback Yet', 'Run AI analysis first to generate feedback drafts');
+                    return;
+                }
+
+                container.innerHTML = feedbacks.map((f, i) => `
+            <div class="card" style="border-left:4px solid ${f.status === 'approved' ? 'var(--success)' : f.status === 'rejected' ? 'var(--danger)' : 'var(--primary)'};">
+                <div class="flex-between mb-md">
+                    <div>
+                        <strong>${f.student_name || 'Student'}</strong>
+                        ${f.status === 'approved' ? '<span class="badge badge-success" style="margin-left:8px;">Approved</span>' :
+                        f.status === 'rejected' ? '<span class="badge badge-danger" style="margin-left:8px;">Rejected</span>' :
+                            '<span class="badge badge-info" style="margin-left:8px;">Draft</span>'}
+                    </div>
+                    <div style="color:${getScoreColor(f.score || 0)}; font-weight:800; font-size:1.3rem;">
+                        ${f.score ? f.score + '%' : '—'}
+                    </div>
+                </div>
+
+                <div class="feedback-editor" style="margin-bottom:16px;">
+                    <div class="panel">
+                        <div class="panel-header">Student Submission</div>
+                        <p style="color:var(--text-secondary); font-size:0.9rem; line-height:1.6;">${(f.submission_content || '').substring(0, 500)}${(f.submission_content || '').length > 500 ? '...' : ''}</p>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header">AI Feedback Draft ${f.status !== 'approved' ? '(Editable)' : ''}</div>
+                        <textarea id="fb_${f.id}" rows="6" style="margin:0; font-size:0.9rem;">${f.teacher_edited || f.ai_draft}</textarea>
+                    </div>
+                </div>
+
+                <div class="flex-between">
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <label style="font-size:0.8rem; color:var(--text-muted); margin:0;">Score:</label>
+                        <input type="number" id="score_${f.id}" value="${f.score || ''}" 
+                            style="width:80px; padding:8px; margin:0;" min="0" max="100">
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <a class="btn btn-ghost btn-sm" href="/api/feedback/${f.id}/export" target="_blank">
+                            ⬇ Export
+                        </a>
+                        <button class="btn btn-ghost btn-sm" onclick="updateFeedback('${f.id}', 'rejected')">
+                            ✕ Reject
+                        </button>
+                        <button class="btn btn-teacher btn-sm" onclick="updateFeedback('${f.id}', 'approved')">
+                            ✓ Approve
+                        </button>
+                    </div>
+                </div>
+            </div>`).join('');
+            } catch (e) {
+                showEmpty(container, '❌', 'Error', 'Failed to load feedback');
+            }
+        }
+
+        async function updateFeedback(fbId, status) {
+            const edited = document.getElementById('fb_' + fbId).value;
+            const score = parseFloat(document.getElementById('score_' + fbId).value) || null;
+
+            try {
+                await API.put('/api/feedback/' + fbId, {
+                    teacher_edited: edited,
+                    score: score,
+                    status: status
+                });
+                showToast(status === 'approved' ? 'Feedback approved!' : 'Feedback rejected');
+                loadFeedback();
+            } catch (e) {
+                showToast('Failed to update', 'error');
+            }
+        }
+
+        // ── Reports ──────────────────────────────────────────────────────────────
+        async function generateReport() {
+            const aid = document.getElementById('reportAssignment').value;
+            if (!aid) { showToast('Select an assignment', 'error'); return; }
+
+            const container = document.getElementById('reportContainer');
+            showSpinner(container);
+
+            try {
+                const report = await API.get('/api/reports/' + aid);
+                const insights = report.insights || [];
+                const classInsight = insights.find(i => i.type === 'class');
+                const stats = classInsight ? classInsight.data.stats : {};
+
+                container.innerHTML = `
+            <div class="card">
+                <div class="flex-between mb-md">
+                    <h3>📄 Report: ${report.assignment.title}</h3>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-ghost btn-sm" onclick="downloadReport()">⬇ JSON</button>
+                        <button class="btn btn-teacher btn-sm" onclick="downloadReportText()">📝 Text Report</button>
+                    </div>
+                </div>
+                <p style="color:var(--text-muted); margin-bottom:20px;">Generated: ${formatDate(report.generated_at)}</p>
+
+                ${classInsight && classInsight.data.ai_summary ? `
+                <div class="ai-summary-card" style="margin-bottom:20px;">
+                    <span class="ai-badge ollama">🤖 AI Summary</span>
+                    <p style="color:var(--text-secondary); line-height:1.7;">${classInsight.data.ai_summary}</p>
+                </div>` : ''}
+
+                ${stats ? `
+                <div class="stat-grid">
+                    <div class="stat-card" style="padding:16px;">
+                        <div class="stat-value" style="font-size:1.4rem;">${stats.average_score || 0}%</div>
+                        <div class="stat-label">Class Average</div>
+                    </div>
+                    <div class="stat-card" style="padding:16px;">
+                        <div class="stat-value" style="font-size:1.4rem;">${stats.total_submissions || 0}</div>
+                        <div class="stat-label">Submissions</div>
+                    </div>
+                    <div class="stat-card" style="padding:16px;">
+                        <div class="stat-value" style="font-size:1.4rem;">${stats.above_70 || 0}</div>
+                        <div class="stat-label">Passing (70%+)</div>
+                    </div>
+                    <div class="stat-card" style="padding:16px;">
+                        <div class="stat-value" style="font-size:1.4rem;">${stats.below_50 || 0}</div>
+                        <div class="stat-label">Below 50%</div>
+                    </div>
+                </div>` : ''}
+
+                <h4 style="margin-top:24px; margin-bottom:12px;">Student Feedback Summary</h4>
+                <table class="data-table">
+                    <tr><th>Student</th><th>Score</th><th>Status</th><th>Feedback Preview</th><th>Export</th></tr>
+                    ${(report.feedback || []).map(f => `
+                        <tr>
+                            <td><strong>${f.student_name || '—'}</strong></td>
+                            <td style="color:${getScoreColor(f.score || 0)}; font-weight:700;">${f.score || '—'}%</td>
+                            <td>${f.status === 'approved' ? '<span class="badge badge-success">Approved</span>' :
+                        f.status === 'rejected' ? '<span class="badge badge-danger">Rejected</span>' :
+                            '<span class="badge badge-info">Draft</span>'}</td>
+                            <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${(f.teacher_edited || f.ai_draft || '').substring(0, 80)}...</td>
+                            <td><a class="btn btn-ghost btn-sm" href="/api/feedback/${f.id}/export" target="_blank">⬇</a></td>
+                        </tr>`).join('')}
+                </table>
+            </div>`;
+
+                window._lastReport = report;
+            } catch (e) {
+                showEmpty(container, '❌', 'Error', 'Failed to generate report');
+            }
+        }
+
+        function downloadReport() {
+            if (!window._lastReport) return;
+            const blob = new Blob([JSON.stringify(window._lastReport, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `report_${window._lastReport.assignment.title.replace(/\s+/g, '_')}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Report downloaded!');
+        }
+
+        function downloadReportText() {
+            if (!window._lastReport) return;
+            const r = window._lastReport;
+            const insights = r.insights || [];
+            const classInsight = insights.find(i => i.type === 'class');
+            const stats = classInsight ? classInsight.data.stats : {};
+
+            let text = `═══════════════════════════════════════\n`;
+            text += `LearnXLive — Assignment Report\n`;
+            text += `═══════════════════════════════════════\n\n`;
+            text += `Assignment: ${r.assignment.title}\n`;
+            text += `Generated: ${r.generated_at}\n\n`;
+
+            if (classInsight && classInsight.data.ai_summary) {
+                text += `AI Summary:\n${classInsight.data.ai_summary}\n\n`;
+            }
+
+            text += `───────────────────────────────────────\nCLASS STATS\n───────────────────────────────────────\n`;
+            text += `Average: ${stats.average_score || 0}%\n`;
+            text += `Highest: ${stats.highest_score || 0}%\n`;
+            text += `Lowest: ${stats.lowest_score || 0}%\n`;
+            text += `Total: ${stats.total_submissions || 0}\n\n`;
+
+            text += `───────────────────────────────────────\nSTUDENT FEEDBACK\n───────────────────────────────────────\n\n`;
+            (r.feedback || []).forEach(f => {
+                text += `Student: ${f.student_name || '—'}\n`;
+                text += `Score: ${f.score || '—'}%\n`;
+                text += `Status: ${f.status}\n`;
+                text += `Feedback:\n${f.teacher_edited || f.ai_draft || ''}\n`;
+                text += `\n---\n\n`;
+            });
+
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `report_${r.assignment.title.replace(/\s+/g, '_')}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Text report downloaded!');
+        }
+
+        // ── Profile ──────────────────────────────────────────────────────────────
+        async function loadProfile() {
+            try {
+                const data = await API.get('/api/auth/profile');
+                // Personal
+                if (data.name) document.getElementById('profileName').value = data.name;
+                if (data.email) document.getElementById('profileEmail').value = data.email;
+                if (data.phone) document.getElementById('profilePhone').value = data.phone;
+                if (data.bio) document.getElementById('profileBio').value = data.bio;
+                // Professional
+                if (data.qualification) document.getElementById('profileQual').value = data.qualification;
+                if (data.subject_expertise) document.getElementById('profileSubject').value = data.subject_expertise;
+                if (data.experience_years) document.getElementById('profileExp').value = data.experience_years;
+                if (data.department) document.getElementById('profileDept').value = data.department;
+                if (data.institution) document.getElementById('profileInstitution').value = data.institution;
+                // Online
+                if (data.website) document.getElementById('profileWebsite').value = data.website;
+                if (data.linkedin) document.getElementById('profileLinkedin').value = data.linkedin;
+                if (data.github) document.getElementById('profileGithub').value = data.github;
+                // Meta
+                if (data.teacher_id_code) {
+                    document.getElementById('profileTeacherId').textContent = data.teacher_id_code;
+                }
+                if (data.created_at) {
+                    const d = new Date(data.created_at);
+                    document.getElementById('profileMemberSince').textContent =
+                        'Member since ' + d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                }
+                if (data.name) {
+                    document.getElementById('profileDisplayName').textContent = data.name;
+                }
+                // Photo
+                if (data.profile_photo_url) {
+                    const img = document.getElementById('profilePhotoPreview');
+                    img.src = data.profile_photo_url;
+                    img.style.display = 'block';
+                    document.getElementById('profilePhotoPlaceholder').style.display = 'none';
+                }
+            } catch (e) {
+                console.error('Failed to load profile:', e);
+            }
+        }
+
+        async function uploadPhoto(input) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+
+            // Preview immediately
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = document.getElementById('profilePhotoPreview');
+                img.src = e.target.result;
+                img.style.display = 'block';
+                document.getElementById('profilePhotoPlaceholder').style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+
+            // Upload
+            const formData = new FormData();
+            formData.append('photo', file);
+            try {
+                const result = await API.upload('/api/auth/profile/photo', formData);
+                showToast('Profile photo updated!');
+            } catch (e) {
+                showToast(e.error || 'Photo upload failed', 'error');
+            }
+        }
+
+        async function saveProfile() {
+            try {
+                await API.put('/api/auth/profile', {
+                    name: document.getElementById('profileName').value,
+                    phone: document.getElementById('profilePhone').value,
+                    bio: document.getElementById('profileBio').value,
+                    qualification: document.getElementById('profileQual').value,
+                    subject_expertise: document.getElementById('profileSubject').value,
+                    experience_years: parseInt(document.getElementById('profileExp').value) || 0,
+                    department: document.getElementById('profileDept').value,
+                    institution: document.getElementById('profileInstitution').value,
+                    website: document.getElementById('profileWebsite').value,
+                    linkedin: document.getElementById('profileLinkedin').value,
+                    github: document.getElementById('profileGithub').value,
+                });
+                showToast('Profile updated successfully!');
+                // Update the display name
+                const name = document.getElementById('profileName').value;
+                if (name) {
+                    document.getElementById('profileDisplayName').textContent = name;
+                }
+            } catch (e) {
+                showToast('Failed to save profile', 'error');
+            }
+        }
+    </script>
+</body>
+
+</html>
